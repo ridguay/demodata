@@ -1,0 +1,41 @@
+steps:
+- task: Bash@3
+  displayName: "Validate ingestion-engine submodule points to a tag"
+  name: Validate_PR
+  env:
+    ACCESSTOKEN: $(Azure-DevOps-PAT-read-Pull-Request)
+  inputs:
+    targetType: 'inline'
+    script: |
+      echo "Validating ingestion-engine submodule..."
+      if [ ! -d "src/ingestion-engine" ]; then
+        echo "Error: ingestion-engine submodule not found!"
+        exit 1
+      fi
+
+      cd src/ingestion-engine
+
+      current_sha=$(git rev-parse HEAD)
+      project=$(System.TeamProject)
+      echo "Project: $project"
+
+      echo "current sha:"
+      echo $current_sha
+
+
+      echo "Checking if the current commit SHA is in the list of tag SHAs..."
+      # Check if the current commit SHA is in the list of tag SHAs
+      for tag in $(git tag -l); do
+
+          echo "$tag: $(git rev-list -n 1 $tag)"                    
+          tag_sha=$(git rev-list -n 1 "$tag")
+          
+          if [[ "$current_sha" == "$tag_sha" ]]; then
+              echo "Current commit matches tag: $tag"
+              exit 0
+          fi
+      done
+
+      # If no match was found, exit 1
+      echo "No tags match the current commit SHA."
+      exit 1

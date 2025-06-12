@@ -1,0 +1,76 @@
+parameters:
+  - name: semantic_release_types
+    type: string
+    default: "build|ci|docs|feat|fix|perf|refactor|style|test|chore"
+
+  - name: semantic_release_allow_revert
+    type: string
+    default: "1"
+
+  - name: include_innersource
+    type: boolean
+    default: false
+
+stages:
+- stage: validate_pr
+  displayName: Validate PR
+  pool: LPDAP-Pool-general
+  jobs:
+  - job: evaluate_pr_description
+    displayName: Evaluate PR Description
+    steps:
+    - checkout: self
+      persistCredentials: true
+      submodules: true
+      fetchDepth: 0
+    - checkout: cicd
+    - task: AzureKeyVault@2
+      inputs:
+        azureSubscription: 'sp-lpdap-meta'
+        KeyVaultName: 'kv-lpdapv001-meta-envs'
+        SecretsFilter: 'Azure-DevOps-PAT-read-Pull-Request'
+        RunAsPreJob: false
+    - task: Bash@3
+      displayName: "Get pull request description"
+      name: Pull_Request
+      env:
+        ACCESSTOKEN: $(Azure-DevOps-PAT-read-Pull-Request)
+      inputs:
+        targetType: 'inline'
+        script: |
+          pr_id="$(System.PullRequest.PullRequestId)"
+          organization_url="https://dev.azure.com/NN-Life-Pensions"
+
+          # Log into devops to be able to read the PR information
+          echo "$ACCESSTOKEN" | az devops login --organization $organization_url
+
+          pr_description=$(az repos pr show --id $pr_id --organization $organization_url | jq -r .description)
+
+          echo "description gotten:"
+          echo "$pr_description"
+
+          # Expose the pr_description to following tasks
+          echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=pr_description]$pr_description"
+
+          az devops logout
+
+    - task: Bash@3
+      displayName: "Evaluate pull request description"
+      env:
+        SEMANTIC_RELEASE_TYPES: $(SEMANTIC_RELEASE_TYPES)
+        SEMANTIC_RELEASE_ALLOW_REVERT: $(SEMANTIC_RELEASE_ALLOW_REVERT)
+      inputs:
+        filePath: "$(Build.SourcesDirectory)/cicd/pipelines/utils/evaluate_conventional_commit.sh" 
+        arguments: '"types=${{ parameters.semantic_release_types }}" "allow_revert=${{ parameters.semantic_release_allow_revert }}" "commit_text=$(Pull_Request.pr_description)"'
+        failOnStderr: true
+
+  - job: validate_innersource_tag
+    displayName: Validate tag of innersource
+    condition: and(succeeded(), ${{ eq(parameters.include_innersource, true) }})
+    steps:
+    - checkout: self
+      persistCredentials: true
+      submodules: true
+      fetchDepth: 0
+      path: transformation
+    - template: task.validate-tag.yml

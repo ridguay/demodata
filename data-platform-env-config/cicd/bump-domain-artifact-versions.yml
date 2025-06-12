@@ -1,0 +1,84 @@
+name: bump-microservice-versions-pipeline
+
+##########
+# This pipeline changes the environment config file according to the given input.
+#   If a version is specified, that version is set
+#   If "latest" is specified, the latest version is gotten from Artifactory
+#   If "none" is specified, the version is not updated
+#
+# Steps this pipeline takes:
+#   1. Determine what versions should be changed (according to the specified input).
+#   2. Change the versions in the right env files
+#   3. Commit these changes to git
+##########
+
+# Cron format
+# mm HH DD MM DW
+#  \  \  \  \  \__ Days of week
+#   \  \  \  \____ Months
+#    \  \  \______ Days
+#     \  \________ Hours
+#      \__________ Minutes
+
+#TODO uncomment the trigger
+## Trigger every weekday at 13:00 UTC (= 15:00 Dutch summer time)
+#schedules:
+#- cron: "0 13 * * Mon,Tue,Wed,Thu,Fri"
+#  displayName: "Daily deploy at 15:00"
+#  branches:
+#    include:
+#    - main
+#  # Scheduled pipelines won't trigger if there are no changes since the last run
+#  # Since this pipeline MAKES the changes, it  has to run, so "always: true"
+#  always: true
+
+trigger:
+  - none # Trigger only manually or through the schedule
+
+parameters:
+- name: environment
+  displayName: 'The environments you want to change the versions of (space separated).'
+  default: tst acc
+
+- name: version_customer_workflow_artifact
+  displayName: "New version for the customer_workflow artifact (vX.X.X, 'latest', 'none': don't update)"
+  default: "none"
+
+- name: version_individual_artifact
+  displayName: "New version for the individual artifact (vX.X.X, 'latest', 'none': don't update)"
+  default: "none"
+
+- name: version_pensions_artifact
+  displayName: "New version for the pensions artifact (vX.X.X, 'latest', 'none': don't update)"
+  default: "none"
+
+# Default is 'none' because the infra modules are too unstable to be automatically bumped yet
+- name: version_infra_modules_artifact
+  displayName: "New version for the infra modules artifact (vX.X.X, 'latest', 'none': don't update)"
+  default: "none"
+
+# When "no" is selected, add '[skip ci]' to the git commit to not trigger the automatic deployment
+- name: trigger_ci
+  displayName: "Trigger the automatic deployment after changes"
+  # TODO: Change to yes after debugging
+  default: "no"
+  values:
+    - "yes"
+    - "no"
+
+resources:
+  repositories:
+  - repository: data-platform-env-config
+    type: git
+    name: LPDAP_Azure/data-platform-env-config
+    ref: main
+
+extends:
+  template: template.bump-domain-artifact-version.yml
+  parameters:
+    environment: ${{ parameters.environment }}
+    version_customer_workflow_artifact: ${{ parameters.version_customer_workflow_artifact }}
+    version_individual_artifact: ${{ parameters.version_individual_artifact }}
+    version_pensions_artifact: ${{ parameters.version_pensions_artifact }}
+    version_infra_modules_artifact: ${{ parameters.version_infra_modules_artifact }}
+    trigger_ci: ${{ parameters.trigger_ci }}

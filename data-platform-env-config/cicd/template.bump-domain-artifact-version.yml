@@ -1,0 +1,233 @@
+
+parameters:
+- name: environment
+  displayName: 'The environments you want to change the versions of (space separated).'
+
+- name: version_customer_workflow_artifact
+  displayName: "New version for the customer_workflow artifact (vX.X.X, 'latest', 'none': don't update)"
+  default: "none"
+
+- name: version_individual_artifact
+  displayName: "New version for the pensions artifact (vX.X.X, 'latest', 'none': don't update)"
+  default: "none"
+
+- name: version_pensions_artifact
+  displayName: "New version for the pensions artifact (vX.X.X, 'latest', 'none': don't update)"
+  default: "none"
+
+# Default is 'none' because the infra modules are too unstable to be automatically bumped yet
+- name: version_infra_modules_artifact
+  displayName: "New version for infra_modules artifact (vX.X.X, 'latest', 'none': don't update)"
+  default: "none"
+
+# When "no" is selected, add '[skip ci]' to the git commit to not trigger the automatic deployment
+- name: trigger_ci
+  displayName: "Trigger the automatic deployment after changes"
+  default: "yes"
+  values:
+    - "yes"
+    - "no"
+
+- name: environment_config_files_dir_path
+  default: ${SYSTEM_DEFAULTWORKINGDIRECTORY}/envs_domain_split
+
+resources:
+  repositories:
+  - repository: this
+    type: git
+    name: LPDAP_Azure/data-platform-env-config
+    ref: main
+
+stages:
+  - stage: init
+    displayName: Initialisation
+    jobs:
+      - job: init
+        displayName: "Analyze input parameters"
+        pool: 
+          name: LPDAP-Pool-general
+        steps:
+          - task: Bash@3
+            displayName: 'Validate Environment'
+            name: Check_Parameters
+            inputs:
+              targetType: 'inline'
+              script: |  
+                # Validate the environments parameter, accepted values are: dev, tst, prd, acc
+                for env in ${{ parameters.environment }}
+                do
+                  echo "Validating environment: $env"
+                  if [[ " sbx pdv dev tst acc prd " != *" $env "* ]]
+                  then  
+                    echo "The environment value ${env} is incorrect."  
+                    exit 1
+                  fi
+                done
+
+                echo "############"
+                echo "Environment Name: ${{ parameters.environment }} is correct."
+                # Create a list with the domain versions to validate
+                domain_versions=("${{ parameters.version_customer_workflow_artifact }}" "${{ parameters.version_individual_artifact }}" "${{ parameters.version_pensions_artifact }}" "${{ parameters.version_infra_modules_artifact }}")
+                
+                for domain in "${domain_versions[@]}"  
+                do  
+                  # Check that the parameters for the domain versions are correct
+                  if [[ $domain != "latest"  && $domain != "none" && ! $domain =~ ^v[0-9]+\.[0-9]{1,2}+\.[0-9]{1,2}+$ ]]    
+                  then  
+                    echo "Invalid version parameter. Only 'v.x.x.x' format is allowed or 'latest' or 'none'."
+                    exit 1  
+                  fi
+                done
+                echo "############"
+                echo "Domain versions are valid."
+                echo "############"   
+          - task: AzureKeyVault@2
+            inputs:
+              azureSubscription: 'sp-lpdap-meta'
+              KeyVaultName: 'kv-lpdapv001-meta-envs'
+              SecretsFilter: '*'
+              RunAsPreJob: false          
+          - task: Bash@3
+            displayName: "Determine versions"
+            name: Run_Details
+            inputs:
+              # Analyze the input parameters and build up the 'versions_argument' variable.
+              # This variable is exposed to the next jobs, and is used as an input argument to the python script
+              # that modifies the actual environment configuration files.
+              # This task does, for each domain:
+              #   1. Check if the filled in parameter is "none" (if so, don't do anything further for this microservice).
+              #   2. If the filled in parameter is NOT "none"
+              #     2.1. Check if the filled in parameter is "latest"
+              #     2.2. If the filled in parameter IS "latest"
+              #       2.2.1. Get the latest version for this microservice from Artifactory
+              #     2.3. Here the version either is filled in (the parameter was NOT "latest")
+              #           or the parameter was "latest" (and the version is retrieved from Artifactory)
+              #     2.4 Add the microservice and its version to the "versions_argument" in the form of 'data_domain_name:vX.X.X'
+              #   3. Here the "versions_argument" is a space separated string containing the microservice mapped to their new versions
+              #       Example: versions_argument="data_pipeline_generator:v1.2.3 data_source_logic:v2.3.4 infra_modules:v3.4.5"
+              #       Note: the microservices for which the parameter 'none' was filled in are omitted from this variable
+              #   4. Set the pipeline name to describe the actions taken
+              #   5. Expose the "versions_argument" variable so it is usable by other jobs as VERSIONS_ARGUMENT
+              targetType: 'inline'
+              script: |
+                # Create a dictionary mapping the microservice name to the input parameter that specified its version
+                # This is looped over to handle the input values "none" and "latest"
+                echo "##[command]declate -A input_parameters"
+                declare -A input_parameters=(
+                  [customer-workflow]="${{ parameters.version_customer_workflow_artifact }}"
+                  [individual]="${{ parameters.version_individual_artifact }}"
+                  [pensions]="${{ parameters.version_pensions_artifact }}"
+                  [infra-modules]="${{ parameters.version_infra_modules_artifact }}"
+                )
+
+                declare -A artifactory_repositories=(
+                  [customer-workflow]="lpdap-customer-workflow-pipelines"
+                  [individual]="lpdap-individual-pipelines"
+                  [pensions]="lpdap-pensions-pipelines"
+                  [infra-modules]="infra-modules"
+                )
+                
+                # Space separated key-value pairs mapping the microservice to the new versions
+                echo "##[command]versions_argument=\"\""
+                versions_argument=""
+                
+                # This loops through the previously defined dictionary and stores the keys in the variable "data_domain_name"
+                for data_domain_name in "${!input_parameters[@]}"; do
+
+                  # Store the value matching the current key in a separate variable
+                  data_domain_version="${input_parameters[$data_domain_name]}"
+
+                  if [[ "$data_domain_version" != "none" && -n "$data_domain_version" ]]; then
+                    # If the specified version == "none" nothing should happen, so only do something when it isn't "none"
+
+                    echo "############"
+                    echo "data domain: ${data_domain_name}"
+                    echo "data domain version: ${data_domain_version}"
+                
+                    if [ "$data_domain_version" == "latest" ]; then
+                      # Get the latest version from artifactory
+                      artifactory_repository="${artifactory_repositories[$data_domain_name]}"
+                      data_domain_version=$(curl -u$(ARTIFACTORY-USER):$(ARTIFACTORY-PASSWORD) -H "content-type: text/plain" -X POST 'https://artifactory.insim.biz/artifactory/api/search/aql' -d "items.find({\"repo\":\"${artifactory_repository}\"})" | jq '.results[].name' | sort -V | tail -n 1)
+                
+                      # Remove the leading quote from the version
+                      data_domain_version=${data_domain_version#\"}
+                      # Remove the trailing '.zip"' from the version
+                      data_domain_version=${data_domain_version%.zip\"}
+
+                      # Safety mechanism to prevent bumping DTAP to an alpha tag
+                      if [[ $data_domain_version == *-* && "${{ parameters.environment }}" != "sbx" && "${{ parameters.environment }}" != "pdv" ]] ; then
+                        echo "Latest artifact $data_domain_version is an alpha version, please specify a stable version."
+                        exit 1
+                      fi
+
+                      echo "data_domain_version: ${data_domain_version}"
+                    fi
+
+                    # Replace '-' with '_' for the input_parameters argument
+                    echo "##[command]data_domain_name_with_underscores=\"\${data_domain_name//-/_}\""
+                    data_domain_name_with_underscores="${data_domain_name//-/_}"
+                    echo "##[command]versions_argument=\"$versions_argument versions__${data_domain_name_with_underscores}__artifact:${data_domain_version}\""
+                    versions_argument="$versions_argument versions__${data_domain_name_with_underscores}__artifact:${data_domain_version}"
+                  fi
+                done
+                
+                # Remove the leading space from this argument (it has one because of how it is built up)
+                versions_argument=${versions_argument# }
+                
+                # Set the environment variable 'Build.UpdateBuildNumber', which is used as pipeline name in the overview
+                # So by setting this, a more readable name is displayed in the overview
+                # The updatebuildnumber may not contain ':' characters, so replace them with ' '
+                pipeline_name="Update ${versions_argument//:/ } for environment ${{ parameters.environment }}"
+                echo "##vso[build.updatebuildnumber]$pipeline_name"
+                
+                # Also expose this variable so it can be used in other jobs
+                echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=VERSIONS_ARGUMENT]$versions_argument"
+
+  - stage: execute
+    displayName: Execute
+    # Needed to be able to read the versions argument
+    dependsOn: ["init"]
+    jobs:
+      - job: execute
+        pool: 
+          name: LPDAP-Pool-general
+        variables:
+          versions_argument: $[ stageDependencies.init.init.outputs['Run_Details.VERSIONS_ARGUMENT'] ] 
+        steps:
+          - checkout: 'this'          
+            submodules: 'false'
+            fetchDepth: 0
+            persistCredentials: true
+
+          - task: UsePythonVersion@0
+            displayName: "Use Python Version"
+            inputs:
+              versionSpec: '3.8.10'
+
+          - task: CmdLine@2
+            displayName: "Poetry Install"
+            inputs:
+              script: |
+                pip install packaging==22.0
+                pip install poetry==1.5.1
+
+                poetry install --only main
+
+          - task: Bash@3
+            displayName: "Update versions"
+            env:
+              ADO_PAT: $(Azure-DevOps-PAT-Semantic-Release)
+              ADO_USER_NAME: $(DEV_OPS_USER_NAME)
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            inputs:
+              filePath: scripts/update_artifact_versions.sh
+              arguments: '"${{ parameters.environment }}" "${{ parameters.environment_config_files_dir_path }}" "${{ parameters.trigger_ci }}" "${VERSIONS_ARGUMENT}"'
+              failOnStderr: false
+
+          - task: CmdLine@2
+            displayName: "Remove Poetry cache"
+            condition: always()
+            inputs:
+              script: |
+                # Remove poetry cache to prevent future pipelines from failing
+                rm -rf ~/.cache/pypoetry/

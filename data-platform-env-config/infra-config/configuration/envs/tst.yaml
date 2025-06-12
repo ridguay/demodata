@@ -1,0 +1,41 @@
+environment_variables:
+  env_name: "tst"
+  container_name: "tst"
+  client_id: "6623d74e-0aa7-4270-bfd9-e0a9f82150dc"
+  subscription_id: "cf5e657c-4f82-41d5-99f4-6b52bdd286cc"
+  tenant_id: "fed95e69-8d73-43fe-affb-a7d85ede36fb"
+  iam_enterprise_object_id: "f9006502-583c-41db-935d-ada058d2aaa2" # Needed for RBAC
+  iam_enterprise_app_id: "7e09bb69-412f-4016-b328-cb9d09a27a36" # Needed in Databricks
+  subscription_object_ids:
+    tst: "8cc30c99-b8e1-45e4-97c6-2c87c03a2ac6"
+  virtual_network_data:
+    resource_group_name: "AzureVnet"
+    name: "NNANPSpoke-LPDAP-TST"
+  tags:
+    Now_ApplicationService: "AS LPDAP Azure - TST"
+    Now_Environment: "Test"
+    Now_CostCenter: "V0015432"
+    Now_ManagedByGroup: "NL CFG LP/CIO"
+    Now_SupportGroup: "NL LP/CIO/LPDAP Azure"
+    Now_Location: "Netherlands"
+    terraform: true
+  vmapps:
+    gallery_name: "lpdap_gallery"
+    gallery_rsg: "rg-lpdapv001-meta"
+    gallery_subscription_id: "8e5fbe4b-a78e-4e74-b38c-15f7fbe4cf9b"
+    apps: # The maximum vm application per vm is 25, one slot is taken by the Azure Team for windows-cis-hardening application
+      snow_findings: "1.0.0"
+      java_jre: "1.0.2"
+      sap_hana_driver: "1.0.0"
+      ibm_db2_driver: "1.0.0"
+      sap_cdc_driver: "1.0.0"              
+
+devops_engineers:
+  - henri
+  - henri_csa
+  - menno
+  - michel
+  - job
+  - maayan
+  - delano
+  - bala

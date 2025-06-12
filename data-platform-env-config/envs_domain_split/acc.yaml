@@ -1,0 +1,15 @@
+env_variables:
+  TFSTATE_RESOURCE_GROUP_NAME: rg-lpdapv001-meta
+  TFSTATE_STORAGE_ACCOUNT_NAME: stlpdapv001metatfstate
+versions:
+  customer_workflow:
+    artifact: v1.47.1
+    environment_version: '01'
+  individual:
+    artifact: v1.15.18
+    environment_version: '01'
+  infra_modules:
+    artifact: v15.3.0
+  pensions:
+    artifact: v1.22.3
+    environment_version: '01'

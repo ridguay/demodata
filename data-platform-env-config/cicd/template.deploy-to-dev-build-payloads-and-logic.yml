@@ -1,0 +1,16 @@
+# This template is here for backwards compatibility.
+# template.build-payloads-build-logic.yml should be used directly in the future.
+
+parameters:
+- name: action
+  type: string
+
+- name: config_file
+  type: string
+    
+
+stages:
+- template: template.build-payloads-build-logic.yml@data-platform-env-config
+  parameters:
+    action: ${{ parameters.action }}
+    config_file: ${{ parameters.config_file }}

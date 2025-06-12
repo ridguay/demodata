@@ -1,0 +1,46 @@
+version: "0.16.0"
+formatter: markdown
+
+header-from: main.tf
+footer-from: ""
+
+sections:
+  show:
+  - data-sources
+  - inputs
+  - outputs
+  #- providers
+  - requirements
+
+content: |-
+  {{ .Requirements }}
+
+  {{ .Inputs }}
+
+  {{ .Outputs }}
+
+output: 
+  # Set to false to disable self-closing tags  
+  disable-self-closing-tags: true  
+  file: README.md
+  mode: inject
+  template: |-
+    <!-- BEGIN_TF_DOCS -->
+    {{ .Content }}
+    <!-- END_TF_DOCS -->
+
+sort:
+  enabled: true
+  by: name
+
+settings:
+  anchor: true
+  color: true
+  default: true
+  description: false
+  escape: true
+  html: true
+  indent: 2
+  required: true
+  sensitive: true
+  type: true

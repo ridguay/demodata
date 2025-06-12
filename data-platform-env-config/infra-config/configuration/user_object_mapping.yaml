@@ -1,0 +1,49 @@
+object_ids:
+  # Customer Workflow#
+  jacob: "21a3aa45-3764-43d7-b1a2-d12848f4b3af" # Jacob CPAEA25HY
+  yuki: "03e108d4-cf1f-4546-94d2-1d20610ecacd" # Yuki CPAWX40TN
+  joost: "d95634b9-d31e-4959-ac60-62e0dee107f6" # Joost CPAUH66LJ
+  krystel: "649dcca7-8772-4ef5-8ce1-9c8ee85dd694" # Krystel CPAJC30JT
+  rob: "92cae328-4b6e-4ce2-adc3-ae7e1d4e86df" # Rob CPAWC51JJ
+  sarah: "774f794e-dd62-4f98-a98a-5c62f89c22e5" # Sarah CPAHN04YI
+  wilma: "cf9a3b32-7999-4105-8580-6052e70cbbfa" # Wilma OQ68OA 
+  # Platform Team #
+  henri_csa: "41af089a-38fd-4353-873a-ec1381a136f6" # Henri ry65gw
+  henri: "558ede26-858c-4a02-b00e-e2a2a7d76f69" # Henri ry65gw (CPA)
+  menno: "2e98a991-0b6f-41d7-b352-fd419231c043" # Menno ql80av (CPA)
+  michel: "935d196d-0999-4372-91b1-331f3de6cbaa" # Michel sk43oh (CPA)
+  maayan: "1f498d9e-90ee-4266-b879-269d5e987589" # Maayan jh10ll (CPA)
+  delano: "f7f5b59e-d9f6-48e5-8bdf-ce9c26b2aad1" # Délano vm23es (CPA)
+  job: "85bb7a48-8c0d-4b35-9bf0-e89126731651" # Job uz02le (CPA)
+  bala: "db7d75de-8517-42ba-b23d-90dac6c3fe97" # Bala ps35wx (CPA)
+  # Mall Main #
+  michael: "bb62d889-1db2-4193-8b01-8fc1a1213696" # Michael Post BK00VS (CPA)
+  meint: "d5c46036-d131-471e-9e06-34a2eb42f76e" # Meint Ijbema RY87CU (CPA)
+  # Individual #
+  rajesh: "0feb6b80-84f5-433b-975c-3b66aa1f2a2f" # Rajesh pa45qn (CPA)
+  florian: "1c7f4e70-a1b1-40e0-af6b-b78256c49b4a" # Florian cw11lv (CPA)
+  shravya: "4d919ead-db98-4219-9e08-2ad0e50db8da" # Shravya aa41cc (CPA)
+  peter: "056327c7-d7f1-422e-8b11-50a53014faa7" # Peter kd20el (CPA)
+  puja: "700de8ff-7307-468d-a274-671f260c0545" # Puja oj00pt (CPA)
+  sravankumar: "6b17a974-fe25-4303-b87b-504ec341ccfc" # Sravankumar fb70el (CPA)
+  sandeep: "9c84325f-562c-4af1-a0ed-f0a99b8e4654" # Sandeep um58ky (CPA)
+  miguel: "f5015f00-902c-48f2-abb7-da96382a5fa9" # Miguel ty48ic (CPA)
+  fokke: "a37dec77-9923-4e85-890e-2977ef8448bf" # Fokke FS09CH (CPA)
+  # Pensions #
+  vincent: "906db182-1a13-4304-b3e5-4aa8bece16bb" # Vincent CPACM36OL
+  jaap: "d20b5d6b-719d-4f78-a143-68132bd22726" # Jaap CPACH84NA
+  steffen: "19499911-3305-4ea8-a48b-d8aada395dc4" # Steffen CPAFK98LR
+  ellen: "545c5208-ba45-4230-84ae-4fb9a3e97c2f" # Ellen CPARS03MF
+  meny: "14209e0b-c65b-4aae-a883-3affb603f5a2" # Meny CPAHS14YO
+  jan: "a55bd29e-3c60-4288-b6ee-2c1aef4929d2" # Jan CPABO98UK
+  nijs: "8ca57909-cdac-4cb3-987f-0d7228e83414"  # Nijs CPARU14JR
+  rene: "668995d1-98d4-4b96-9fed-44790f1b66e3"  # Rene CPATQ02AK
+  tom: "12908f5c-24f6-4dd7-be8f-21e170255970"  # Tom CPAZN08AF
+  andreas: "1eeccd6c-d2cb-4175-b75c-4b4f098193ab" # Andreas CPAWD10YI
+  # Glam #
+  radjen: "2e49e338-d8d9-4daa-aa40-0073a960bd68" # CPABK34WU@nngroup.onmicrosoft.com
+  ajit: "11c7f796-479a-4c8b-a148-10d6c76b3a38" # CPAMJ82EW@nngroup.onmicrosoft.com 
+  nitesh: "0b020bfb-b510-4cfb-b464-1bc51570b7bd" # CPAQC06WR@nngroup.onmicrosoft.com 
+  bart: "3a9b5ba5-73cf-4a9f-9996-369d5688c291" # CPACS01TI@nngroup.onmicrosoft.com
+  rupesh: "f4ea591d-8359-4143-9056-5d2e7184a597" # CPAHF97HK@nngroup.onmicrosoft.com
+  jaco: "429eb395-10ce-4eb3-ae09-046abaafb149" # CPAFO35UF@nngroup.onmicrosoft.com

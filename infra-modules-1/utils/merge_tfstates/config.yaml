@@ -1,0 +1,71 @@
+domain:
+  base: 
+    base:
+      inputs:
+        - [ "databricks", "base/databricks_1.tfstate" ]
+        - [ "databricks", "base/databricks_2.tfstate" ]
+        - [ "key_vault", "base/key_vault_sources.tfstate" ]
+        - [ "logging", "base/log_analytics_workspace.tfstate" ]
+        - [ "resource_group", "base/resource_group.tfstate" ]
+        - [ "storage", "base/storage_account.tfstate" ]
+        - [ "storage", "base/storage_container.tfstate" ]
+      output: base.tfstate
+  functional:
+    functional:
+      inputs:
+        - [ "kv_infra_diagnostic_settings", "functional/diagnostic_settings/key_vault/infra.tfstate"]
+        - [ "kv_sources_diagnostic_settings", "functional/diagnostic_settings/key_vault/sources.tfstate"]
+
+        - [ "storage_diagnostic_settings_blob", "functional/diagnostic_settings/storage_account/blob.tfstate"]
+        - [ "storage_diagnostic_settings_file", "functional/diagnostic_settings/storage_account/file.tfstate"]
+        - [ "storage_diagnostic_settings_queue", "functional/diagnostic_settings/storage_account/queue.tfstate"]
+        - [ "storage_diagnostic_settings_table", "functional/diagnostic_settings/storage_account/table.tfstate"]
+
+        - [ "adf_diagnostic_settings", "functional/diagnostic_settings/data_factory.tfstate"]
+        - [ "databricks_diagnostic_settings", "functional/diagnostic_settings/databricks_workspace.tfstate"]
+        - [ "disk_encryption_diagnostic_settings", "functional/diagnostic_settings/disk_encryption_key_vault.tfstate"]
+
+        - [ "role_assignments_data_factory", "functional/role_assignments/data_factory.tfstate"]
+        - [ "role_assignments_databricks", "functional/role_assignments/databricks.tfstate"]
+        - [ "databricks_service_principal", "functional/role_assignments/databricks_serviceprincipals.tfstate"]
+        - [ "role_assignments_kv_infra", "functional/role_assignments/key_vault_infra.tfstate"]
+        - [ "role_assignments_kv_sources", "functional/role_assignments/key_vault_sources.tfstate"]
+        - [ "role_assignments_storage", "functional/role_assignments/storage.tfstate"]
+        - [ "role_assignments_storage_dac", "functional/role_assignments/storage_dac.tfstate"]
+        - [ "role_assignments_virtual_machine", "functional/role_assignments/virtual_machine.tfstate"]
+
+        - [ "adf_infra_components", "functional/adf_infra_components.tfstate"]
+        - [ "data_factory", "functional/data_factory.tfstate"]
+        - [ "databricks", "functional/databricks.tfstate"]
+        - [ "key_vault_infra", "functional/key_vault_infra.tfstate"]
+      output: functional.tfstate
+mall:
+  base: 
+    base:
+      inputs:
+        - [ "databricks", "base/databricks_1.tfstate" ]
+        - [ "databricks", "base/databricks_2.tfstate" ]
+        - [ "key_vault", "base/key_vault_sources.tfstate" ]
+        - [ "logging", "base/log_analytics_workspace.tfstate" ]
+        - [ "resource_group", "base/resource_group.tfstate" ]
+        - [ "storage", "base/storage_account.tfstate" ]
+        - [ "storage", "base/storage_container.tfstate" ]
+      output: base.tfstate
+  functional:
+    functional:
+      inputs:
+        - [ "storage_diagnostic_settings_blob", "functional/diagnostic_settings/storage_account/blob.tfstate"]
+        - [ "storage_diagnostic_settings_file", "functional/diagnostic_settings/storage_account/file.tfstate"]
+        - [ "storage_diagnostic_settings_queue", "functional/diagnostic_settings/storage_account/queue.tfstate"]
+        - [ "storage_diagnostic_settings_table", "functional/diagnostic_settings/storage_account/table.tfstate"]
+
+        - [ "databricks_diagnostic_settings", "functional/diagnostic_settings/databricks_workspace.tfstate"]
+
+        - [ "role_assignments_databricks", "functional/role_assignments/databricks.tfstate"]
+        - [ "databricks_service_principal", "functional/role_assignments/databricks_serviceprincipals.tfstate"]
+        - [ "role_assignments_kv_sources", "functional/role_assignments/key_vault_sources.tfstate"]
+        - [ "role_assignments_storage", "functional/role_assignments/storage.tfstate"]
+        - [ "role_assignments_storage_dac", "functional/role_assignments/storage_dac.tfstate"]
+
+        - [ "databricks", "functional/databricks.tfstate"]
+      output: functional.tfstate

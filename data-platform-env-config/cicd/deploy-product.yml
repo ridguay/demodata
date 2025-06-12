@@ -1,0 +1,399 @@
+name: deploy-product-pipeline
+##########
+# This pipeline deploys the platform to the specified environments.
+#
+# Steps this pipeline takes:
+#   1. (if parameters.data_domain == "changes") -> determine the data domains to check for changes in the last commit
+#      (if parameters.environment == "changes") -> determine the environments to check for changes in the last commit
+#   2. Loop over all specified data domains
+#      Loop over all specified environments
+#      Check the environment config files in envs_domain_split for changes in version numbers between current and last commit
+#   3. Deploy the platform to all specified environments
+##########
+
+# This pipeline can be triggered manually (for which you can select the parameters manually)
+# But it is also automatically triggered when there are changes to a yaml file in the 'envs' directory
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - "envs_domain_split/dev.yaml"
+      - "envs_domain_split/tst.yaml"
+      - "envs_domain_split/acc.yaml"
+      - "envs_domain_split/prd.yaml"
+
+# trigger: none
+
+# Ommitting the last commit message from being displayed on the pipeline description
+appendCommitMessageToRunName: False
+
+# We need to be able to destroy stuff in the functional or operational layer through the pipeline to prevent manual interventions from a local machine. Especially when it is related to modules that rely on a domain artifact.
+
+parameters:
+  - name: action
+    displayName: 'Which Terraform/Terragrunt action you would like to perform?'
+    default: apply
+    values:
+      - apply
+
+  - name: environment
+    displayName: 'The environment(s) you want to deploy to (space separated, "changes" deploys the changes of the last commit).'
+    type: string
+    default: changes
+  
+  - name: product
+    displayName: "Which product do you want to deploy ('domain' for data domain teams, 'platform' for platform engineers)"
+    default: "domain"
+    values:
+      - domain
+      - platform
+
+  - name: data_domain
+    displayName: 'The data domain(s) to be deployed (space separated, "changes" deploys only the domain(s) containing any changes in the last commit).'
+    type: string
+    default: changes
+  
+  - name: artifact_domain
+    displayName: 'For non-customer instances in sbx/predev, specify which domain artifact you want to deploy. Defaults to customer_workflow if left empty.'
+    type: string
+    default: " "
+  
+  - name: environment_layer_path
+    displayName: 'Path to the layer to be executed by Terragrunt (f.e. base, functional, or operational)'
+    type: string
+    default: .
+
+  - name: databricks_bundle_root_dir
+    displayName: 'Root directory of the databricks bundles'
+    type: string
+    default: "src/ingestion/sources/**/slo"
+
+  - name: prevent_destroys_in_base_layer
+    displayName: "Should we prevent resources in the base layer from being destroyed. Only uncheck this if you know what you are doing!"
+    type: boolean
+    default: true
+
+  - name: deploy_asset_bundle
+    displayName: "Should we deploy the Databricks Asset Bundle if it exists?"
+    type: boolean
+    default: true
+
+  - name: dry_run
+    displayName: "dry_run (when this is true, there will be no actual deployment of the platform)"
+    type: boolean
+    default: false
+
+variables:
+  - name: valid_domains
+    value: customer_workflow individual pensions business glam rsm reinsurance
+  
+  - name: domains_with_artifact
+    value: customer_workflow individual pensions
+
+  - name: product_configuration_dir
+    value: $(Build.SourcesDirectory)/infra-config
+
+  # If environment == 'changes', set the value to all environments
+  # Removing an environment from the list, will cause changes to that environment to never be deployed.
+  - name: environments
+    ${{ if eq(parameters.environment, 'changes') }}:
+      value: dev tst acc prd
+    ${{ else }}:
+      value: ${{ parameters.environment }}
+
+  # If data_domain == 'changes', set the value to all current data domains.
+  # Removing a data domain from the data_domain_list, will cause that changes to that data domain to never be deployed.
+  - name: data_domain_list
+    ${{ if eq(parameters.data_domain, 'changes') }}:
+      value: ${{ variables.domains_with_artifact }}
+    ${{ else }}:
+      value: ${{ parameters.data_domain }}
+
+  # if data_domain == 'changes', only the domains are deployed that have changed their artifact version.
+  # in this case, the layer path shouldn't be ., since only the top level has to be updated
+  - name: environment_layer_path
+    ${{ if and(eq(parameters.data_domain, 'changes'), eq(parameters.environment_layer_path, '.')) }}:
+      value: operational
+    ${{ else }}:
+      value: ${{ parameters.environment_layer_path }}
+
+  - group: Meta subscription
+
+
+# To get the pipeline template to deploy to an environment
+# The template also checks this repo out, in case the template is run from a different repository.
+# So we have to add it here as well.
+resources:
+  repositories:
+    - repository: data-platform-env-config
+      type: git
+      name: LPDAP_Azure/data-platform-env-config
+      ref: $(Build.SourceBranch)
+    - repository: iam
+      type: git
+      name: LPDAP_Azure/IAM
+      ref: main
+
+# The initialisation should run on a general agent
+pool:
+  name: LPDAP-Pool-general
+
+stages:
+  - stage: init
+    displayName: Initialisation
+    jobs:
+      - job: init
+        displayName: "Analyze input parameters"
+        steps:
+          - task: UsePythonVersion@0
+            displayName: "Use Python Version"
+            inputs:
+              versionSpec: '3.8.10'
+
+          - task: CmdLine@2
+            displayName: "Poetry Install"
+            inputs:
+              script: |
+                echo "##[command]pip3 install --upgrade requests"
+                pip3 install --upgrade requests
+
+                # Install a fixed version of packaging to solve an issue with a breaking change in setuptools
+                pip install packaging==22.0
+
+                echo "##[command]pip install poetry==1.5.1"
+                pip install poetry==1.5.1
+
+                echo "##[command]poetry install --only main"
+                poetry install --only main
+
+          - task: AzureCLI@2
+            displayName: "Determine environments and validate versions"
+            name: Run_Details
+            inputs:
+              azureSubscription: 'sp-lpdap-meta'
+              addSpnToEnvironment: true
+              scriptLocation: 'inlineScript'
+              scriptType: 'bash'
+              inlineScript: |
+
+                # Check if we need to check out the previous commit
+                if [ "${{ parameters.environment }}" == "changes" ] || [ "${{ parameters.data_domain }}" == "changes" ]; then 
+
+                  echo "##[group]Checkout previous commit"
+
+                  echo "##[command]current_commit_sha=$(git log --max-count 1 --pretty=format:'%h')"
+                  current_commit_sha=$(git log --max-count 1 --pretty=format:'%h')
+
+                  # Checkout the previous commit in a separate directory
+                  echo "##[command]cd $(Agent.TempDirectory)"
+                  cd $(Agent.TempDirectory)
+
+                  echo "##[command]git config --global user.email \"deploy-bot@lpdap.nl\""
+                  git config --global user.email "deploy-bot@lpdap.nl"
+                  echo "##[command]git config --global user.name \"Deploy Bot\""
+                  git config --global user.name "Deploy Bot"
+
+                  echo "##[command]git clone -n https://$(System.AccessToken)@dev.azure.com/NN-Life-Pensions/LPDAP_Azure/_git/data-platform-env-config"
+                  git clone -n https://$(System.AccessToken)@dev.azure.com/NN-Life-Pensions/LPDAP_Azure/_git/data-platform-env-config
+                  echo "##[command]cd data-platform-env-config"
+                  cd data-platform-env-config
+
+                  echo "##[command]previous_commit_sha=$(git log --skip 1 --max-count 1 --pretty=format:'%h')"
+                  previous_commit_sha=$(git log --skip 1 --max-count 1 --pretty=format:'%h')
+
+                  echo "##[command]git checkout '${previous_commit_sha}'"
+                  git checkout "${previous_commit_sha}"
+
+                  echo "##[debug]current_commit_sha: $current_commit_sha"
+                  echo "##[debug]previous_commit_sha: $previous_commit_sha"
+
+                  echo "##[endgroup]"
+                  
+                fi 
+
+                echo "##[command]cd ${SYSTEM_DEFAULTWORKINGDIRECTORY}/envs_domain_split/"
+                cd ${SYSTEM_DEFAULTWORKINGDIRECTORY}/envs_domain_split/
+
+                # Create empty variable to pass to the next stages with a list of environments to deploy
+                environments_stage=""
+
+                echo "##[debug]data_domain_list = ${{ variables.data_domain_list }}"
+                
+                for environment in ${{ variables.environments }}; do
+                  for data_domain in ${{ variables.data_domain_list }}; do
+
+                    # If any 'data_domain' that's filled out in the data_domain_list is a customer domain, and the artifact_domain parameter is filled in, we want to cancel the deployment pipeline.
+                    if [[ "${{ variables.valid_domains }}" == *"${data_domain}"* && "${{ parameters.artifact_domain }}" != " " && "${data_domain}" != "${{ parameters.artifact_domain }}" ]]; then
+                      echo "Cancelling the job, you are not allowed to deploy a ${{ parameters.artifact_domain }} artifact to a $data_domain instance."
+                      exit 1
+                    fi
+                    
+                    if [ "${{ parameters.environment }}" == "changes" ] || [ "${{ parameters.data_domain }}" == "changes" ]; then
+
+                      echo "##[command]path_to_current_file=\"\${SYSTEM_DEFAULTWORKINGDIRECTORY}/envs_domain_split/\${environment}\.yaml"
+                      path_to_current_file="${SYSTEM_DEFAULTWORKINGDIRECTORY}/envs_domain_split/${environment}.yaml"
+
+                      echo "##[command]path_to_previous_file=\"\${AGENT_TEMPDIRECTORY}/data-platform-env-config/envs_domain_split/\${environment}\.yaml"
+                      path_to_previous_file="${AGENT_TEMPDIRECTORY}/data-platform-env-config/envs_domain_split/${environment}.yaml"
+
+                      echo "##[command]is_different=\$(poetry run python \${SYSTEM_DEFAULTWORKINGDIRECTORY}/src/data_platform_env_config/main.py value-is-different $path_to_current_file $path_to_previous_file versions__${data_domain}__artifact)"
+                      is_different=$(poetry run python ${SYSTEM_DEFAULTWORKINGDIRECTORY}/src/data_platform_env_config/main.py value-is-different $path_to_current_file $path_to_previous_file versions__${data_domain}__artifact)
+
+                      if [ "${is_different}" == "True" ]; then
+                        echo "$file_path $data_domain: Different"
+
+                        environments_stage="$environments_stage ${data_domain}__$environment"
+                      else
+                        echo "$file_path $data_domain: Not different"
+                      fi
+                      echo " "
+
+                    else
+                      environments_stage="$environments_stage ${data_domain}__$environment"
+                    fi
+                  done 
+                done
+
+                # Remove the leading space from the variable (it always has one because of how the variable is constructed)
+                environments_stage=${environments_stage# }
+
+                # Verify that the to-deploy version can be deployed to all envs.
+                # There are two core rules:
+                  # The version selected for deployment must be same or higher than current version of target environment.
+                  # The version selected for deployment must be same or lower than the current version of target-1 environment.
+                # In other words, for the version V(env) and the environments E = { d, t, a, p } we should always ensure:
+                  # V(d) >= V(t) >= V(a) >= V(p).
+                  # V(to_deploy) >= V(current) for all environments E.
+                # Switch to the meta subscription in case we aren't there yet. Also disable warnings for legibility.
+                az account set --subscription LPDAP-meta
+                az config set core.only_show_errors=yes
+
+                # Needed to be able to execute the script that reads the yaml file
+                chmod +x ${SYSTEM_DEFAULTWORKINGDIRECTORY}/cicd/utils/parse_yaml.sh
+
+                for domain_env in $environments_stage; do
+                  domain="${domain_env%%__*}"
+                  env="${domain_env##*__}"
+
+                  if [[ "sbx pdv dev" == *"$env"* ]] || [[ "platform" == "$domain" ]]; then
+                    echo "Version check not enforced for $domain in $env, continuing."
+                    continue
+                  fi
+
+                  # Save all values from the config file into environment variables. For some reason this seems to throw a Bash error in the log, but it works fine.
+                  echo "##[command]eval $(bash ${SYSTEM_DEFAULTWORKINGDIRECTORY}/cicd/utils/parse_yaml.sh \"${SYSTEM_DEFAULTWORKINGDIRECTORY}/envs_domain_split/$env.yaml\")"
+                  eval $(bash ${SYSTEM_DEFAULTWORKINGDIRECTORY}/cicd/utils/parse_yaml.sh "$env.yaml")
+
+                  # Find the current infra-modules version from the version Blob in the meta blob
+                  version_blob=$(az storage blob list --account-name stlpdapv001metatfstate --container-name $env --prefix $domain/ --query "[?contains(name, 'version')].{Name:name}" --output tsv)
+                  current_version="${version_blob#*version-}"
+                  current_version="${current_version%.*}"
+
+                  # We also need to verify the prior environment's infra-modules version, so also fetch that from the meta blob
+                  if [[ $env == "dev" ]]; then
+                    prior_env_version=$current_version
+                  else
+                    if [[ $env == "tst" ]]; then
+                      prior_env="dev"
+                    elif [[ $env == "acc" ]]; then
+                      prior_env="tst"
+                    elif [[ $env == "prd" ]]; then
+                      prior_env="acc"
+                    fi
+
+                    version_blob=$(az storage blob list --account-name stlpdapv001metatfstate --container-name $prior_env --prefix $domain/ --query "[?contains(name, 'version')].{Name:name}" --output tsv)
+                    # Remove everything before 'version-' including the 'version-' part, and everything after the last .
+                    prior_env_version="${version_blob#*version-}"
+                    prior_env_version="${prior_env_version%.*}"
+                  fi
+
+                  # This function uses IFS magic to convert a version string 'x.y.z' to an integer for comparison
+                  function version_to_int() {
+                    local input="$1"
+                    IFS='.' read -r x y z <<< "$input"
+                    echo $((10000 * x + 100 * y + z))
+                  }
+                  current_version_int=$(version_to_int $current_version)
+                  prior_env_version_int=$(version_to_int $prior_env_version)
+                  new_version=${versions_infra_modules_artifact:1}  # Retrieved from the envs_domain_split/$env.yaml file, trimming off the 'v'
+                  new_version_int=$(version_to_int $new_version)
+
+                  echo "##[debug]Current version in $env: $current_version, $current_version_int"
+                  echo "##[debug]Current version in $prior_env: $prior_env_version, $prior_env_version_int"
+                  echo "##[debug]Version to deploy in $env: $new_version, $new_version_int"
+
+                  # Skip the checks if deploying the operational layer, this is not an 'infra' deployment but a data plane deployment.
+                  if [[ "${{ variables.environment_layer_path }}" != *"operational"* ]]; then
+                    if [ "$new_version_int" -lt "$current_version_int" ]; then
+                      echo "##vso[task.logissue type=error]New version $new_version in $env is smaller than current version $current_version. Deployment not allowed."
+                      exit 1
+                    elif [ "$new_version_int" -gt "$prior_env_version_int" ]; then
+                      echo "##vso[task.logissue type=error]New version $new_version in $env is greater than current version in $prior_env $prior_env_version. Deployment not allowed."
+                      exit 1
+                    else:
+                      echo "##[debug]Allowing infra-modules version upgrade from $current_version to $new_version."
+                    fi
+                fi
+                done
+
+                if [[ "${{ variables.environment_layer_path }}" == "." ]]; then
+                  layer_tag=""
+                else
+                  layer_tag=${{ variables.environment_layer_path }}
+                fi
+
+                # Set the environment variable 'Build.UpdateBuildNumber', which is used as pipeline name in the overview
+                # So by setting this, a more readable name is displayed in the overview
+                echo "##vso[build.updatebuildnumber]${{ parameters.action }} $layer_tag $environments_stage"
+
+                # Also expose the environments variable so it can be used in other jobs
+                echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=ENVIRONMENTS]$environments_stage"
+
+                # Expose the new version for the pipeline display
+                echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=new_version]$new_version"
+
+  # Create a deploy stage for each data_domain and environment combination, skipping an env if not found in the `init.Run_details.ENVIRONMENT` variable
+  - ${{ each data_domain in split(variables.data_domain_list, ' ')}}:
+    - ${{ each env in split(variables.environments, ' ') }}:
+      - stage: "Deploy_${{ data_domain }}_${{ replace(env, '-', '_') }}"
+        displayName: Deploy to ${{ data_domain }} ${{ env }} ${{ variables.new_version }}
+        dependsOn: ["init"]
+        condition: contains(dependencies.init.outputs['init.Run_details.ENVIRONMENTS'], '${{ data_domain }}__${{ env }}')
+        jobs:
+        - template: template.deploy-product.yml
+          parameters:
+            action: ${{ parameters.action }}
+            environment: ${{ env }}
+            environment_layer_path: ${{ variables.environment_layer_path }}
+            data_domain: ${{ data_domain }}
+            # If the domain to deploy to is not a customer domain (i.e., demo1 or demo2), we should by default download and deploy a customer_workflow artifact
+            ${{ if and(not(contains(format(' {0} ', variables.valid_domains), format(' {0} ', data_domain))), eq(parameters.artifact_domain, ' ')) }}:
+              artifact_domain: 'customer_workflow'
+            ${{ if and(not(contains(format(' {0} ', variables.valid_domains), format(' {0} ', data_domain))), not(eq(parameters.artifact_domain, ' '))) }}:  
+              artifact_domain: ${{ parameters.artifact_domain }}
+            ${{ if and(contains(format(' {0} ', variables.valid_domains), format(' {0} ', data_domain)), eq(parameters.artifact_domain, ' ')) }}:  
+              artifact_domain: ${{ parameters.artifact_domain }}
+            databricks_bundle_root_dir: ${{ parameters.databricks_bundle_root_dir }}
+            prevent_destroys_in_base_layer: ${{ parameters.prevent_destroys_in_base_layer }}
+            deploy_asset_bundle: ${{ parameters.deploy_asset_bundle }}
+            dry_run: ${{ parameters.dry_run }}
+            product: ${{ parameters.product}}
+            # The path to the terragrunt configuration file
+
+            platform_configuration: ${{ variables.product_configuration_dir }}/configuration/platform/platform.yaml
+            environment_configuration: ${{ variables.product_configuration_dir }}/configuration/envs/${{ env }}.yaml
+            product_configuration: ${{ variables.product_configuration_dir }}/configuration/products/${{ data_domain }}.yaml
+            product_configuration_dir: ${{ variables.product_configuration_dir }}
+
+      - stage: "Deploy_IAM_${{ data_domain }}_${{ replace(env, '-', '_') }}"
+        displayName: Deploy IAM Jobs to ${{ data_domain }} ${{ env }}
+        dependsOn: ["Deploy_${{ data_domain }}_${{ replace(env, '-', '_') }}"]
+        condition: and(succeeded(), contains('dev tst acc prd', '${{ env }}'))
+        jobs:
+        - template: cicd/job.iam-databricks-jobs.yml@iam
+          parameters:
+            azureserviceconnection: "lpdap-iam-${{ env }}"
+            env: ${{ env }}
+            domain: ${{ data_domain }}

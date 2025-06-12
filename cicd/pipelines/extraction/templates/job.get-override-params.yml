@@ -1,0 +1,33 @@
+parameters:
+- name: environment
+  type: string
+
+jobs:
+- job: get_override_params_job
+  displayName: Get override parameters
+  pool: LPDAP-Pool-general
+  steps:
+  - checkout: cicd
+    path: cicd
+
+  - checkout: extraction
+    path: extraction
+
+  - task: UsePythonVersion@0
+    displayName: "Use Python Version"
+    inputs:
+      versionSpec: '3.8.10'
+
+  - task: Bash@3
+    displayName: Get parameter file from extraction repo and generate parameter string
+    name: create_param_string
+    inputs:
+      workingDirectory: $(Pipeline.Workspace)/extraction
+      targetType: 'inline'
+      script: |
+        poetry install 
+        poetry run python $(Pipeline.Workspace)/cicd/pipelines/extraction/scripts/generate_param_string.py ./variables/${{ parameters.environment }}.yml ./paramstring.out
+        override_params=$(<./paramstring.out)
+
+        # Expose the override parameters as a string for use in the ARM deployment step
+        echo "##vso[task.setvariable variable=override_params;isOutput=true]$override_params"

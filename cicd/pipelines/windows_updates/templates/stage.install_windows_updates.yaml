@@ -1,0 +1,35 @@
+#template_install_windows_updates.yaml
+parameters:
+- name: 'datadomainshort'
+  type: string
+- name: 'rebootsetting'
+  type: string
+  default: 'Never'
+- name: 'environment'
+  type: string
+  default: 'sbx'
+- name: 'subscription'
+  type: string
+- name: 'force'
+  type: boolean
+
+jobs:
+- job: install_updates_${{ parameters.environment }}
+  timeoutInMinutes: 120
+  displayName: Install Updates ${{ parameters.datadomainshort }} ${{ parameters.environment }}
+  pool:
+    ${{ if eq(parameters.environment, 'iam') }}:
+      name: 'LPDAP-Pool-General' 
+    ${{ else }}:
+      name: 'LPDAP-Pool-${{ parameters.environment }}' 
+  steps:
+  - task: AzurePowerShell@5
+    displayName: 'Install Windows Updates'
+    inputs:
+      azureSubscription: ${{ parameters.subscription }}
+      ScriptPath: '$(Build.SourcesDirectory)/pipelines/windows_updates/scripts/install_windows_updates.ps1'
+      ScriptArguments: '-DataDomainShort ${{ parameters.datadomainshort }} `
+                        -RebootSetting ${{ parameters.rebootsetting }} `
+                        -Environment ${{ parameters.environment }} `
+                        -Force $${{ parameters.force }}' # The extra $ allows boolean to be passed correctly
+      azurePowerShellVersion: LatestVersion

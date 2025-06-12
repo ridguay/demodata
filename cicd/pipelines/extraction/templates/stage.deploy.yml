@@ -1,0 +1,123 @@
+parameters:
+- name: environment
+  type: string
+- name: artifactoryRepoUrl
+  type: string
+- name: version
+  type: string
+- name: condition
+  type: string
+- name: dependsOn
+  type: object
+  default: []
+
+stages:
+- stage: deploy_${{ parameters.environment }}
+  condition: ${{ parameters.condition }}  
+  dependsOn: ${{ parameters.dependsOn }}
+  displayName: "Deploy ADF to ${{ parameters.environment }}"
+  jobs:
+  - template: ./job.get-override-params.yml
+    parameters:
+      environment: ${{ parameters.environment }}
+
+  - deployment: deploy_arm_template
+    displayName: "Deploy ARM template"
+    dependsOn: [ "get_override_params_job" ]
+    pool: LPDAP-Pool-${{ parameters.environment }}
+    environment: adf-${{ parameters.environment }}
+    variables:
+    - template: variables/general.yml@extraction
+    - template: variables/${{ parameters.environment }}.yml@extraction
+    - name: overrideParameters
+      value: $[ dependencies.get_override_params_job.outputs['create_param_string.override_params'] ]
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: cicd
+            path: cicd
+
+          - task: AzureKeyVault@2
+            inputs:
+              azureSubscription: 'sp-lpdap-meta'
+              KeyVaultName: 'kv-lpdapv001-meta-envs'
+              SecretsFilter: 'ARTIFACTORY-USER,ARTIFACTORY-PASSWORD'
+              RunAsPreJob: true
+
+          - task: AzurePowerShell@5
+            name: start_shir_vm
+            displayName: 'Start SHIR VM'
+            inputs:
+              scriptType: 'FilePath'
+              connectedServiceNameARM: LPDAP-${{ parameters.environment }}
+              scriptPath: '$(Pipeline.Workspace)/cicd/pipelines/extraction/scripts/start_stop_vm.ps1'
+              scriptArguments: '-DataDomainShort $(domain) -Environment ${{ parameters.environment }}'
+              errorActionPreference: stop
+              failOnStandardError: False
+              azurePowerShellVersion: LatestVersion
+
+          - task: CmdLine@2
+            displayName: Download ADF template ${{ parameters.version }}
+            inputs:
+              script: |
+                cd ${PIPELINE_WORKSPACE}
+                echo "url: ${{ parameters.artifactoryRepoUrl }}/${{ parameters.version }}.zip"
+                echo "##[command]curl -u$(ARTIFACTORY-USER):$(ARTIFACTORY-PASSWORD) -o \"${{ parameters.version }}.zip\" \"${{ parameters.artifactoryRepoUrl }}/${{ parameters.version }}.zip\""
+                curl -v -u$(ARTIFACTORY-USER):$(ARTIFACTORY-PASSWORD) -o "${{ parameters.version }}.zip" "${{ parameters.artifactoryRepoUrl }}/${{ parameters.version }}.zip"
+
+                echo "##[command]unzip -d . ${{ parameters.version }}.zip"
+                unzip -d . ${{ parameters.version }}.zip
+
+          - task: AzurePowerShell@5
+            displayName: Stop ADF Triggers
+            inputs:
+              scriptType: 'FilePath'
+              connectedServiceNameARM: LPDAP-${{ parameters.environment }}
+              scriptPath: '$(Pipeline.Workspace)/ArmTemplate/PrePostDeploymentScript.ps1'
+              scriptArguments: -ArmTemplate "$(Pipeline.Workspace)/ArmTemplate/ARMTemplateForFactory.json" -ArmTemplateParameters "$(Pipeline.Workspace)/ArmTemplate/ARMTemplateParametersForFactory.json" -ResourceGroupName $(resourceGroupName) -DataFactoryName $(dataFactoryName) -predeployment $true -deleteDeployment $false
+              errorActionPreference: stop
+              failOnStandardError: False
+              azurePowerShellVersion: 'LatestVersion'
+              pwsh: True
+              # workingDirectory: '$(Pipeline.Workspace)/ArmTemplate'
+
+          - task: AzureResourceManagerTemplateDeployment@3
+            displayName: 'Deploy ARM template'
+            inputs:
+              deploymentScope: 'Resource Group'
+              deploymentMode: 'incremental'
+              deploymentOutputs: 'ArmOutputs'
+              azureResourceManagerConnection: LPDAP-${{ parameters.environment }}
+              subscriptionId: $(subscriptionId)
+              resourceGroupName: $(resourceGroupName)
+              location: $(location)
+              csmFile: '$(Pipeline.Workspace)/ArmTemplate/ARMTemplateForFactory.json'
+              csmParametersFile: '$(Pipeline.Workspace)/ArmTemplate/ARMTemplateParametersForFactory.json'
+              overrideParameters: "$(overrideParameters)"
+
+          - task: AzurePowerShell@5
+            displayName: Start ADF Triggers
+            inputs:
+              scriptType: 'FilePath'
+              connectedServiceNameARM: LPDAP-${{ parameters.environment }}
+              scriptPath: '$(Pipeline.Workspace)/ArmTemplate/PrePostDeploymentScript.ps1'
+              scriptArguments: -ArmTemplate "$(Pipeline.Workspace)/ArmTemplate/ARMTemplateForFactory.json" -ArmTemplateParameters "$(Pipeline.Workspace)/ArmTemplate/ARMTemplateParametersForFactory.json" -ResourceGroupName $(resourceGroupName) -DataFactoryName $(dataFactoryName) -predeployment $false -deleteDeployment $true
+              errorActionPreference: stop
+              failOnStandardError: False
+              azurePowerShellVersion: 'LatestVersion'
+              pwsh: True
+              # workingDirectory: '$(Pipeline.Workspace)/ArmTemplate'
+
+          - task: AzurePowerShell@5
+            displayName: 'Stop SHIR VM if it was started'
+            condition: and(succeeded(), eq(variables.VMTurnedOn, 'true'))
+            inputs:
+              scriptType: 'FilePath'
+              connectedServiceNameARM: LPDAP-${{ parameters.environment }}
+              scriptPath: '$(Pipeline.Workspace)/cicd/pipelines/extraction/scripts/start_stop_vm.ps1'
+              scriptArguments: '-DataDomainShort $(domain) -Environment ${{ parameters.environment }} -VMTargetState Stopped'
+              errorActionPreference: stop
+              failOnStandardError: False
+              azurePowerShellVersion: LatestVersion

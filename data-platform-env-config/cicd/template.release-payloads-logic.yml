@@ -1,0 +1,94 @@
+parameters:
+- name: repo_url
+
+stages:
+- stage: Release
+  dependsOn:
+  - build_payloads
+  - build_logic
+  pool:
+    name: LPDAP-Pool-general
+  jobs:
+  - job:
+    displayName: "Upload"
+    steps:
+    - task: AzureKeyVault@2
+      inputs:
+        azureSubscription: 'sp-lpdap-meta'
+        KeyVaultName: 'kv-lpdapv001-meta-envs'
+        SecretsFilter: '*'
+        RunAsPreJob: true
+
+    - task: CmdLine@2
+      displayName: "Cleanup previous artifacts"
+      inputs:
+        script: |
+          # Make sure the artifact directories are empty
+          echo "##[command]rm -rf $(Pipeline.Workspace)/pipelines_artifact"
+          rm -rf $(Pipeline.Workspace)/pipelines_artifact
+
+          echo "##[command]rm -rf $(Pipeline.Workspace)/logic_artifact"
+          rm -rf $(Pipeline.Workspace)/logic_artifact
+
+    - download: current
+      displayName: "Download Payload Artifact"
+      artifact: pipelines_artifact
+
+    - download: current
+      displayName: "Download Logic Artifact"
+      artifact: logic_artifact
+
+    # The 'ArchiveFiles@2' task somehow failed,
+    # so use a CmdLine task that invokes the zip command to zip the files
+    - task: CmdLine@2
+      displayName: Zip Build
+      inputs:
+        script: |
+
+          # Explicitly cause this script to fail if any command raises an error code
+          set -Eeuo pipefail
+
+          echo "##[command]mkdir $(Build.ArtifactStagingDirectory)/build"
+          mkdir $(Build.ArtifactStagingDirectory)/build
+
+          echo "##[command]ls $(Build.ArtifactStagingDirectory)/build"
+          ls $(Build.ArtifactStagingDirectory)/build
+
+          echo "##[group]Pipelines"
+          echo "##[command]cp -r $(Pipeline.Workspace)/pipelines_artifact $(Build.ArtifactStagingDirectory)/build/pipelines"
+          cp -r $(Pipeline.Workspace)/pipelines_artifact $(Build.ArtifactStagingDirectory)/build/pipelines
+
+          echo "##[command]ls $(build.artifactstagingdirectory)/build"
+          ls $(build.artifactstagingdirectory)/build
+
+          echo "##[command]ls $(Build.ArtifactStagingDirectory)/build/pipelines"
+          ls $(Build.ArtifactStagingDirectory)/build/pipelines
+          echo "##[endgroup]"
+
+          echo "##[group]Logic"
+          echo "##[command]cp -r $(Pipeline.Workspace)/logic_artifact $(Build.ArtifactStagingDirectory)/build/logic"
+          cp -r $(Pipeline.Workspace)/logic_artifact $(Build.ArtifactStagingDirectory)/build/logic
+
+          echo "##[command]ls $(build.artifactstagingdirectory)/build"
+          ls $(build.artifactstagingdirectory)/build
+          echo "##[endgroup]"
+
+          echo "##[command]cd $(Pipeline.Workspace)/build"
+          cd $(Build.ArtifactStagingDirectory)/build
+
+          echo "##[command]zip -r \"$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip\" ."
+          zip -r "$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip" .
+        failOnStderr: true
+
+    - task: CmdLine@2
+      displayName: Upload Build to Artifactory
+      inputs:
+        script: |
+
+          # Explicitly cause this script to fail if any command raises an error code
+          set -Eeuo pipefail
+
+          tag="$(Build.SourceBranchName)"
+          echo "Version: $tag"
+          echo "##[command]curl -u$(ARTIFACTORY-USER):$(ARTIFACTORY-PASSWORD) -T \"$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip\" \"${{ parameters.repo_url }}/$tag.zip\""
+          curl -u$(ARTIFACTORY-USER):$(ARTIFACTORY-PASSWORD) -T "$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip" "${{ parameters.repo_url }}/$tag.zip"

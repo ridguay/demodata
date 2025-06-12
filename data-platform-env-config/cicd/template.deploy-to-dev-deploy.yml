@@ -1,0 +1,99 @@
+parameters:
+- name: action
+- name: config_file
+- name: cluster_name
+- name: data_domain
+- name: environment
+
+stages:
+- stage: "Deploy"
+  dependsOn:
+  - build_payloads
+  - build_logic
+  variables:
+  - name: domain_artifact_folder
+    value: "domain_artifact"
+  - name: product_configuration_dir
+    value: "$(Build.SourcesDirectory)/infra-config"
+
+  jobs:
+  - template: template.deploy-product.yml@data-platform-env-config
+    parameters:
+      action: ${{ parameters.action }}
+      environment: ${{ parameters.environment }}
+
+      data_domain: ${{ parameters.data_domain }}
+
+      # The terragrunt command will be executed from the directory specified here
+      environment_layer_path: operational/
+      terragrunt_include_dir: "adf_deploy_component_payloads databricks/deploy_package_to_specific_clusters databricks/deploy_custom_notebooks databricks/deploy_library_to_specific_cluster"
+
+      # Only fill in the data_source_name if there is a config file specified
+      ${{ if not(eq(parameters.config_file, ' '))}}:
+        data_source_name: ${{ parameters.config_file }}
+      
+      databricks_cluster_name: ${{ parameters.cluster_name }}
+
+      product: "domain"
+      platform_configuration: ${{ variables.product_configuration_dir }}/configuration/platform/platform.yaml
+      product_configuration: ${{ variables.product_configuration_dir }}/configuration/products/${{ parameters.data_domain }}.yaml
+      product_configuration_dir: ${{ variables.product_configuration_dir }}
+      environment_configuration: ${{ variables.product_configuration_dir }}/configuration/envs/${{ parameters.environment }}.yaml
+
+      dry_run: false
+
+      # Steps to build the artifact
+      get_domain_artifact_steps:
+        - task: CmdLine@2
+          displayName: "Cleanup previous artifacts"
+          inputs:
+            script: |
+              # Make sure the artifact directories are empty
+              echo "##[command]rm -rf $(Pipeline.Workspace)/pipelines_artifact"
+              rm -rf $(Pipeline.Workspace)/pipelines_artifact
+
+              echo "##[command]rm -rf $(Pipeline.Workspace)/logic_artifact"
+              rm -rf $(Pipeline.Workspace)/logic_artifact
+              
+        - download: current
+          displayName: Download Payload Artifact
+          artifact: pipelines_artifact
+
+        - download: current
+          displayName: Download Logic Artifact
+          artifact: logic_artifact
+
+        - task: CmdLine@2
+          displayName: "Move artifact"
+          inputs:
+            script: |
+              echo "##[command]mkdir \${BUILD_STAGINGDIRECTORY}/${{ variables.domain_artifact_folder }}/"
+              mkdir ${BUILD_STAGINGDIRECTORY}/${{ variables.domain_artifact_folder }}/
+
+              echo "##[command]cp -r \$(Pipeline.Workspace)/pipelines_artifact \$(Build.StagingDirectory)/${{ variables.domain_artifact_folder }}/pipelines"
+              cp -r $(Pipeline.Workspace)/pipelines_artifact $(Build.StagingDirectory)/${{ variables.domain_artifact_folder }}/pipelines
+
+              echo "##[command]cp -r \$(Pipeline.Workspace)/logic_artifact \$(Build.StagingDirectory)/${{ variables.domain_artifact_folder }}/logic"
+              cp -r $(Pipeline.Workspace)/logic_artifact $(Build.StagingDirectory)/${{ variables.domain_artifact_folder }}/logic
+
+              echo "##[command]rm -rf $(Pipeline.Workspace)/pipelines_artifact"
+              rm -rf $(Pipeline.Workspace)/pipelines_artifact
+
+              echo "##[command]rm -rf $(Pipeline.Workspace)/logic_artifact"
+              rm -rf $(Pipeline.Workspace)/logic_artifact
+
+              echo "##[command] echo $(Build.StagingDirectory)/${{ variables.domain_artifact_folder }}/logic"
+              echo $(Build.StagingDirectory)/${{ variables.domain_artifact_folder }}/logic
+
+              echo "##[command] echo $(Build.StagingDirectory)/${{ variables.domain_artifact_folder }}/pipelines"
+              echo $(Build.StagingDirectory)/${{ variables.domain_artifact_folder }}/pipelines
+
+- stage: "Deploy_IAM"
+  displayName: Deploy IAM permissions for Databricks
+  dependsOn: ["Deploy"]
+  jobs:
+  - template: cicd/job.iam-databricks-jobs.yml@iam
+    parameters:
+      azureserviceconnection: "lpdap-iam-${{ parameters.environment }}"
+      env: ${{ parameters.environment }}
+      domain: ${{ parameters.data_domain }}

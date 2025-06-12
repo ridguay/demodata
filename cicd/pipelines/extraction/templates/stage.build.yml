@@ -1,0 +1,90 @@
+parameters:
+- name: artifactoryRepoUrl
+  type: string
+- name: buildTarget
+  type: string
+  default: artifactory
+
+stages:
+- stage: "build_adf"
+  displayName: "Build ARM template for Data Factory"
+  jobs:
+  - job:
+    displayName: "Build ARM template"
+    variables:
+    - template: variables/dev.yml@extraction
+    steps:
+    - task: AzureKeyVault@2
+      inputs:
+        azureSubscription: 'sp-lpdap-meta'
+        KeyVaultName: 'kv-lpdapv001-meta-envs'
+        SecretsFilter: 'ARTIFACTORY-USER,ARTIFACTORY-PASSWORD'
+        RunAsPreJob: true
+
+    # Use a custom install to use the npm packages already installed to prevent
+    # the job timing out after 120s and defaulting to the installed packages anyway
+    - task: Npm@1
+      inputs:
+        command: 'custom'
+        customCommand: 'install --prefer-offline --no-audit'
+        workingDir: '$(Build.Repository.LocalPath)/cicd/'
+        verbose: true
+      displayName: 'Install npm package'
+
+    # Validate all of the Data Factory resources in the repository. You'll get the same validation errors as when "Validate All" is selected.
+    - task: Npm@1
+      inputs:
+        command: 'custom'
+        workingDir: '$(Build.Repository.LocalPath)/cicd/'
+        customCommand: 'run build validate $(Build.Repository.LocalPath)/adf/ /subscriptions/$(subscriptionId)/resourceGroups/$(resourceGroupname)/providers/Microsoft.DataFactory/factories/$(dataFactoryName)'
+      displayName: 'Validate Data Factory instance'
+
+    # Validate and then generate the ARM template into the destination folder, which is the same as selecting "Publish" from the UX.
+    # The ARM template generated isn't published to the live version of the factory. Deployment should be done by using a CI/CD pipeline. 
+    - task: Npm@1
+      inputs:
+        command: 'custom'
+        workingDir: '$(Build.Repository.LocalPath)/cicd/'
+        customCommand: 'run build export --preview $(Build.Repository.LocalPath)/adf /subscriptions/$(subscriptionId)/resourceGroups/$(resourceGroupname)/providers/Microsoft.DataFactory/factories/$(dataFactoryName) "ArmTemplate"'
+      displayName: 'Validate and Generate ARM template'
+
+    - task: PublishPipelineArtifact@1
+      condition: eq('${{ parameters.buildTarget }}', 'local')
+      inputs:
+        targetPath: '$(Build.Repository.LocalPath)/cicd/ArmTemplate'
+        artifact: 'ArmTemplate'
+        publishLocation: 'pipeline'
+
+    - task: CmdLine@2
+      condition: eq('${{ parameters.buildTarget }}', 'artifactory')
+      displayName: Zip Build
+      inputs:
+        script: |
+          # Explicitly cause this script to fail if any command raises an error code
+          set -Eeuo pipefail
+
+          echo "##[command]mkdir $(Build.ArtifactStagingDirectory)/build"
+          mkdir $(Build.ArtifactStagingDirectory)/build
+
+          echo "##[command]cp -r $(Build.Repository.LocalPath)/cicd/ArmTemplate $(Build.ArtifactStagingDirectory)/build"
+          cp -r $(Build.Repository.LocalPath)/cicd/ArmTemplate $(Build.ArtifactStagingDirectory)/build
+
+          echo "##[command]cd $(Pipeline.Workspace)/build"
+          cd $(Build.ArtifactStagingDirectory)/build
+
+          echo "##[command]zip -r \"$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip\" ."
+          zip -r "$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip" .
+        failOnStderr: true
+
+    - task: CmdLine@2
+      condition: eq('${{ parameters.buildTarget }}', 'artifactory')
+      displayName: Upload Build to Artifactory
+      inputs:
+        script: |
+          # Explicitly cause this script to fail if any command raises an error code
+          set -Eeuo pipefail
+
+          tag="$(Build.SourceBranchName)"
+          echo "Version: $tag"
+          echo "##[command]curl -u$(ARTIFACTORY-USER):$(ARTIFACTORY-PASSWORD) -T \"$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip\" \"${{ parameters.artifactoryRepoUrl }}/$tag.zip\""
+          curl -u$(ARTIFACTORY-USER):$(ARTIFACTORY-PASSWORD) -T "$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip" "${{ parameters.artifactoryRepoUrl }}/$tag.zip"

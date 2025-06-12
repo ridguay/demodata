@@ -1,0 +1,198 @@
+# Read every key, except for the keys starting with an underscore
+# Then all keys that do not start with an underscore are considered to be part of the schema
+# All keys starting with an underscore are considered 'documentation', and not part of the schema
+
+env_variables:
+  env_name:
+    _type: "string"
+    _description: "Name of the environment to deploy to. Also subscription name."
+    _options: ["dev", "tst", "acc", "prd", "pdv"]
+  tenant_id: 
+    _type: "string"
+    _description: "ID of the tenant of Nationale Nederlanden."
+  client_id:
+    _type: "string"
+    _description: "Client ID of the service principal for the subscription to deploy to."
+  subscription_id:
+    _type: "string"
+    _description: "ID of the subscription to deploy to."
+  iam_enterprise_object_id:
+    _type: "string"
+    _description: "Object ID Enterprise Application."
+  iam_enterprise_app_id:
+    _type: "string"
+    _description: "Enterprise Application ID to use in databricks."
+  tags:
+    _type: "map"
+    _description: "Tags all resources will get. Should be key-value pairs."
+  virtual_network_data:
+    _description: "Information of how the networking is setup. This should contain the resource_group_name and name key, containing the name of the resource group containing the networking and the name of the virtual network respectively."
+    resource_group_name:
+      _type: "string"
+      _description: "Name of the resource group containing the networking. This is created by the Azure team when a subscription is requested."
+  subscription_object_ids:
+    _type: "map"
+    _description: "Key-value pairs of the names of the subscription and their object ids. At time of writing (2024-07-16) the only entry should be the subscription to be deployed to."
+  vmapps:
+    apps:
+      _type: "map"
+      _description: "Key-value pairs of the names of the applications and their versions. The maximum vm application per vm is 25, one slot is taken by the Azure Team for windows-cis-hardening application."
+    gallery_name:
+      _type: "string"
+      _description: "TODO: Add a sensible description here"
+    gallery_rsg: 
+      _type: "string"
+      _description: "TODO: Add a sensible description here"
+    gallery_subscription_id: 
+      _type: "string"
+      _description: "TODO: Add a sensible description here"
+
+domain_variables:
+  entra_group_names:
+    _description: "Group names of Entra ID groups that we need for grants."
+    use_catalog:
+      _description: "The group that should get 'use catalog' rights"
+      _type: "string"
+  ip_addresses:
+    _description: "IP addresses and ranges that various resources will use."
+    services_subnet:
+      _type: "string, format: XXX.XXX.XXX.XXX/XX"
+      _description: "IP range for the services subnet."
+    databricks_public_subnet:
+      _type: "string, format: XXX.XXX.XXX.XXX/XX"
+      _description: "IP range the databricks public subnet can use."
+    databricks_private_subnet:
+      _type: "string, format: XXX.XXX.XXX.XXX/XX"
+      _description: "IP range the databricks private subnet can use."
+    data_factory_private_endpoint:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the Azure Data Factory private endpoint can use."
+    data_factory_02_private_endpoint:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the Azure Data Factory private endpoint can use."
+    virtual_machine_1:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the virtual machine can use. Initially the possibility of multiple VMs was considered, therefore the key contains a number."
+    virtual_machine_2:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the virtual machine can use. Initially the possibility of multiple VMs was considered, though a second VM is never implemented, and should therefore not be used."
+    virtual_machine_3:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the virtual machine can use for ADF2. Initially the possibility of multiple VMs was considered, therefore the key contains a number."
+    virtual_machine_4:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the virtual machine can use for ADF2. Initially the possibility of multiple VMs was considered, though a second VM is never implemented, and should therefore not be used."
+    databricks_private_endpoint:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the Databricks private endpoint can use."
+    storage_dfs_private_endpoint: 
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the storage dfs private endpoint can use."
+    storage_blob_private_endpoint:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the storage blob private endpoint can use."
+    storage_table_private_endpoint:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the storage table private endpoint can use."
+    key_vault_infra_private_endpoint:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the infra key vault private endpoint can use."
+    key_vault_sources_private_endpoint:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the sources key vault private endpoint can use."
+    interface_storage_blob_private_endpoint:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address GoAnywhere can use to connect to the special purpose storage account blob endpoint."
+    interface_storage_dfs_private_endpoint:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address GoAnywhere can use to connect to the special purpose storage account dfs endpoint."
+  data_factory_git_config:
+    account_name:
+      _type: "string"
+      _description: "Azure DevOps organization name for the Git Sync"
+    branch_name:
+      _type: "string"
+      _description: "Azure DevOps Git collaboration branch name used for the ADF instance"
+    project_name:
+      _type: "string"
+      _description: "Azure DevOps project name used for the ADF instance"
+    repository_name:
+      _type: "string"
+      _description: "Azure DevOps Git repository name used for the ADF instance"
+    root_folder:
+      _type: "string"
+      _description: "Root folder of ADF resources hosted in the Git repository"
+  patch_schedule_end_time: 
+      _type: "string, format: HH:MM"
+      _description: "TODO: Is this correct, and what is exactly patched?: The patch for the VM is scheduled to be performed regularly. This key is the end of the timewindow in which patches can be applied."
+  patch_schedule_recur_every: 
+      _type: "string, example: '1Month Third Monday'"
+      _description: "TODO: Is this correct, and what is exactly patched?: The patch for the VM is scheduled to be performed regularly. This key is the frequency of the patching."
+  patch_schedule_start_date: 
+      _type: "string, example: YYYY-mm-dd"
+      _description: "TODO: Is this correct, and what is exactly patched?: The patch for the VM is scheduled to be performed regularly. This key is the date the schedule will start on."
+  patch_schedule_start_time: 
+      _type: "string, example: HH:MM"
+      _description: "TODO: Is this correct, and what is exactly patched?: The patch for the VM is scheduled to be performed regularly. This key is the start of the timewindow in which patches can be applied."
+  virtual_machine_size:
+    _type: "string, example: Standard_D4_v4"
+    _description: "The type of the virtual machine used to host the Self Hosted Integration Runtime of ADF."
+  abbreviation:
+    _type: "string, usually 3 characters, could be more."
+    _description: "Abbreviation of the domain name, this is used in the naming of resources, and can therefore be not too long. The naming restrictions of some resources will allow for an abbreviation of 3 characters maximum."
+  object_ids:
+    data_engineers:
+      _type: "map"
+      _description: "Map of the names of the data engineers to their object ids. Make sure you use the object ID of the CPA accounts. The names of the data engineers for example also used when creating user specific clusters."
+    devops_engineers:
+      _type: "map"
+      _description: "Map of the names of the platform engineers to their object ids. Make sure you use the object ID of the CPA accounts. Before the platform team was formed, the engineers working on the platform were called 'DevOps engineers' hence the name."
+    azure_databricks_app:
+      _type: "string"
+      _description: "TODO: What is exactly the description of this key? Is the following correct? 'Object ID for the enterprise application linked to Databricks.' it seems a bit too vague to me (Jeroen). Also, what is the difference with the 'adb_enterprise_app' key?"
+    adb_enterprise_app:
+      _type: "map"
+      _description: "TODO: What is exactly the description of this key? Is the following correct? 'Map of the name to the object ID for the enterprise application linked to Databricks.' it seems a bit too vague to me (Jeroen). Also, what is the difference with the 'azure_databricks_app' key?"
+
+infrastructure_configuration:
+  instance_type:
+    _type: "string, options: 'domain', 'mall'"
+    _description: "The instance type of the platform to be deployed. This is used to determine if this is a silver (domain) or gold (mall) instance."
+  env_type:
+    _type: "string, options: 'dev', 'tst', 'acc', 'prd'"
+    _default: "If this key is empty, the value under 'env_variables.env_name' is used."
+    _description: "The 'type' of the platform to be deployed. This is used to determine the correct configuration for the platform. This should only be used when testing an infrastructure deployment. When this value is then set to 'dev', all configurations that are specific to dev are included and can be tested."
+  deploy_azure_hosted_integration_runtime:
+    _type: "bool"
+    _description: "Flag to indicate if an Azure-hosted integration runtime should be deployed to the Data Factory"
+  configure_default_network_rules_storage:
+    _type: "bool"
+    _description: "Flag to specify if one the network rules should be set for a respective storage account. Disabling this allows one to enable public network access from all networks. This is needed for a POC in the Pensions environment."
+  storage_account_extra_tags:
+    _type: "map"
+    _description: "Storage Account Extra tags to pass, on top of the tags specified in the <env>.yml files."
+  uc_enabled:
+    _type: "bool"
+    _description: "Flag to specify if the Unity Catalog should be enabled."
+  legacy_clusters_enabled:
+    _type: "bool"
+    _description: "Flag to specify if legacy cluster should be deployed."
+  databricks_main_clusters:
+    _description: "Map of cluster configuration parameters that should be different than the defaults."
+    _type: "map"
+  databricks_user_specific_clusters:
+    _description: "Map of user specific cluster configuration parameters that should be different than the defaults."
+    _type: "map"
+  databricks_pypi_packages:
+    _description: "List of PyPI packages that need to be installed on the cluster."
+    _type: "list of <package>==<pinned_version> items."
+  deploy_interface_storage_account:
+    _description: "Toggle for deploying the interface storage account."
+    _type: "bool"
+  interface:
+    _description: "Names of the interface storage accounts to be deployed."
+    _type: "bool"
+  storage_account:
+    shared_access_key_enabled:
+      _type: "bool"
+      _description: "Flag to specify if the shared access key should be enabled for the storage account."

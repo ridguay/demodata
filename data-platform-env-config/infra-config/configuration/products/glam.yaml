@@ -1,0 +1,283 @@
+user_object_ids:
+  data_engineers:
+    - radjen
+    - ajit
+    - nitesh
+    - bart
+    - rupesh
+    - jaco
+
+infrastructure_configuration:
+  instance_type: mall
+  deploy_azure_hosted_integration_runtime: false
+  uc_enabled: true
+  legacy_clusters_enabled: false
+  # The following Databricks related entries allow for defining cluster configuration and pypi packages. 
+  # There are default values for all parameters (see modules/functional/variables.tf -> databricks_functional_vars), so you only have to specify default values that you want to overwrite
+  # This can be done across all environments (here), or for a specific environment (add this to env-specific infrastructure-configuration below)
+  databricks_main_clusters:
+    spark_version_id: "15.4.x-scala2.12"
+  databricks_user_specific_clusters: {}
+  databricks_pypi_packages: []
+  storage_account:
+    shared_access_key_enabled: false
+  interface: ["lpintglm"]
+  deploy_interface_storage_account: true
+
+sbx:
+  domain_variables:
+    name: "glam"
+    version: "01"
+    abbreviation: "glm"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.169.80.32/27"
+      databricks_public_subnet: "10.169.81.128/26"
+      databricks_private_subnet: "10.169.81.192/26"
+      virtual_machine_1: "10.169.80.36"
+      virtual_machine_2: "10.169.80.37"
+      virtual_machine_3: "10.169.80.44"
+      virtual_machine_4: "10.169.80.45"
+      data_factory_private_endpoint: "10.169.80.38"
+      data_factory_02_private_endpoint: "10.169.80.46"
+      databricks_private_endpoint: "10.169.80.39"
+      storage_dfs_private_endpoint: "10.169.80.40"
+      storage_blob_private_endpoint: "10.169.80.41"
+      storage_table_private_endpoint: "10.169.80.47"      
+      key_vault_infra_private_endpoint: "10.169.80.42"
+      key_vault_sources_private_endpoint: "10.169.80.43"
+      interface_storage_dfs_private_endpoint: "10.169.80.48"
+      interface_storage_blob_private_endpoint: "10.169.80.49"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Second Wednesday"
+    patch_schedule_start_time: "19:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"
+
+  infrastructure_configuration:
+    env_type: "dev"
+    uc_enabled: false
+
+pdv:
+  domain_variables:
+    name: "glam"
+    version: "01"
+    abbreviation: "glm"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.163.48.96/27"
+      databricks_public_subnet: "10.163.50.128/26"
+      databricks_private_subnet: "10.163.50.192/26"
+      virtual_machine_1: "10.163.48.100"
+      virtual_machine_2: "10.163.48.101"
+      virtual_machine_3: "10.163.48.108"
+      virtual_machine_4: "10.163.48.109"
+      data_factory_private_endpoint: "10.163.48.102"
+      data_factory_02_private_endpoint: "10.163.48.110"
+      databricks_private_endpoint: "10.163.48.103"
+      storage_dfs_private_endpoint: "10.163.48.104" 
+      storage_blob_private_endpoint: "10.163.48.105"
+      storage_table_private_endpoint: "10.163.48.111"      
+      key_vault_infra_private_endpoint: "10.163.48.106"
+      key_vault_sources_private_endpoint: "10.163.48.107"
+      interface_storage_dfs_private_endpoint: "10.163.48.112"
+      interface_storage_blob_private_endpoint: "10.163.48.113"
+      
+     
+      
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Second Wednesday"
+    patch_schedule_start_time: "19:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"
+
+  infrastructure_configuration:
+    env_type: "tst"
+    uc_enabled: false
+
+dev:
+  domain_variables:
+    name: "glam"
+    version: "01"
+    abbreviation: "glm"
+    entra_group_names:
+      use_catalog: "GSCDCA-glm-Unity-dev-usecatalog-gold"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.165.160.32/27"
+      databricks_public_subnet: "10.166.92.128/26"
+      databricks_private_subnet: "10.166.92.192/26"
+      virtual_machine_1: "10.165.160.36"
+      virtual_machine_2: "10.165.160.37"
+      virtual_machine_3: "10.165.160.44"
+      virtual_machine_4: "10.165.160.45"
+      data_factory_private_endpoint: "10.165.160.38"
+      data_factory_02_private_endpoint: "10.165.160.46"
+      databricks_private_endpoint: "10.165.160.39"
+      storage_dfs_private_endpoint: "10.165.160.40"
+      storage_blob_private_endpoint: "10.165.160.41"
+      storage_table_private_endpoint: "10.165.160.47"
+      key_vault_infra_private_endpoint: "10.165.160.42"
+      key_vault_sources_private_endpoint: "10.165.160.43"
+      interface_storage_dfs_private_endpoint: "10.165.160.48"
+      interface_storage_blob_private_endpoint: "10.165.160.49"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Second Wednesday"
+    patch_schedule_start_time: "19:00"
+    patch_schedule_start_date: "2021-03-02"
+    patch_schedule_end_time: "03:00"
+
+tst:
+  domain_variables:
+    name: "glam"
+    version: "01"
+    abbreviation: "glm"
+    entra_group_names:
+      use_catalog: "GSCTCA-glm-Unity-tst-usecatalog-gold"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.165.164.32/27"
+      databricks_public_subnet: "10.172.8.128/26"
+      databricks_private_subnet: "10.172.8.192/26"
+      virtual_machine_1: "10.165.164.36"
+      virtual_machine_2: "10.165.164.37"
+      virtual_machine_3: "10.165.164.44"
+      virtual_machine_4: "10.165.164.45"
+      data_factory_private_endpoint: "10.165.164.38"
+      data_factory_02_private_endpoint: "10.165.164.46"
+      databricks_private_endpoint: "10.165.164.39"
+      storage_dfs_private_endpoint: "10.165.164.40"
+      storage_blob_private_endpoint: "10.165.164.41"
+      storage_table_private_endpoint: "10.165.164.47"
+      key_vault_infra_private_endpoint: "10.165.164.42"
+      key_vault_sources_private_endpoint: "10.165.164.43"
+      interface_storage_dfs_private_endpoint: "10.165.164.48"
+      interface_storage_blob_private_endpoint: "10.165.164.49"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Second Thursday"
+    patch_schedule_start_time: "19:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"
+
+acc:
+  domain_variables:
+    name: "glam"
+    version: "01"
+    abbreviation: "glm"
+    entra_group_names:
+      use_catalog: "GSCACA-glm-Unity-acc-usecatalog-gold"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.165.168.32/27"
+      databricks_public_subnet: "10.165.49.128/26"
+      databricks_private_subnet: "10.165.49.192/26"
+      virtual_machine_1: "10.165.168.36"
+      virtual_machine_2: "10.165.168.37"
+      virtual_machine_3: "10.165.168.44"
+      virtual_machine_4: "10.165.168.45"
+      data_factory_private_endpoint: "10.165.168.38"
+      data_factory_02_private_endpoint: "10.165.168.46"
+      databricks_private_endpoint: "10.165.168.39"
+      storage_dfs_private_endpoint: "10.165.168.40"
+      storage_blob_private_endpoint: "10.165.168.41"
+      storage_table_private_endpoint: "10.165.168.47"
+      key_vault_infra_private_endpoint: "10.165.168.42"
+      key_vault_sources_private_endpoint: "10.165.168.43"
+      interface_storage_dfs_private_endpoint: "10.165.168.48"
+      interface_storage_blob_private_endpoint: "10.165.168.49"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb-acc: "8718671f-8e8c-44f7-b749-3a1d7f22f463"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Third Saturday"
+    patch_schedule_start_time: "10:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"
+
+prd:
+  domain_variables:
+    name: "glam"
+    version: "01"
+    abbreviation: "glm"
+    entra_group_names:
+      use_catalog: "GSCPCA-glm-Unity-prd-usecatalog-gold"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.165.172.32/27"
+      databricks_public_subnet: "10.171.0.128/26"
+      databricks_private_subnet: "10.171.0.192/26"
+      virtual_machine_1: "10.165.172.36"
+      virtual_machine_2: "10.165.172.37"
+      virtual_machine_3: "10.165.172.44"
+      virtual_machine_4: "10.165.172.45"
+      data_factory_private_endpoint: "10.165.172.38"
+      data_factory_02_private_endpoint: "10.165.172.46"
+      databricks_private_endpoint: "10.165.172.39"
+      storage_dfs_private_endpoint: "10.165.172.40"
+      storage_blob_private_endpoint: "10.165.172.41"
+      storage_table_private_endpoint: "10.165.172.47"
+      key_vault_infra_private_endpoint: "10.165.172.42"
+      key_vault_sources_private_endpoint: "10.165.172.43"
+      interface_storage_dfs_private_endpoint: "10.165.172.48"
+      interface_storage_blob_private_endpoint: "10.165.172.49"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb-prd: "dfd1bbb4-3a0d-4c45-9f8c-30e83d728c73"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Fourth Saturday"
+    patch_schedule_start_time: "10:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"

@@ -1,0 +1,49 @@
+user_object_ids:
+  data_engineers: 
+    - jacob
+
+infrastructure_configuration:
+  instance_type: domain_or_mall
+  # HERE WE SHOULD FILL IN ALL THE PATHS TO DOMAIN STORAGE ACCOUNTS - STARTING FROM .../terraform/ - THAT NEED TO BE MOUNTED TO THE DATABRICKS NOTEBOOKS
+  domains_for_storage:
+    customer-workflow: "/configuration/products/customer_workflow.yaml"
+    pensions: "/configuration/products/pensions.yaml"
+    individual: "/configuration/products/individual.yaml"
+
+sbx:
+  domain_variables:
+    abbreviation: "<fill in>" # For example mno for menno or pns for pensions
+    virtual_machine_size: "Standard_D4_v4"  
+    name: "<fill in>" # For example menno or pensions
+    version: "01"
+    ip_addresses:
+      services_subnet: "<Need to be unique>"
+      databricks_public_subnet: "<Need to be unique>"
+      databricks_private_subnet: "<Need to be unique>"
+      virtual_machine_1: "<Need to be unique>"
+      #virtual_machine_2: ""
+      data_factory_private_endpoint: "<Need to be unique>"
+      databricks_private_endpoint: "<Need to be unique>"
+      storage_dfs_private_endpoint: "<Need to be unique>"
+      storage_blob_private_endpoint: "<Need to be unique>"
+      storage_table_private_endpoint: "<Need to be unique>"
+      key_vault_infra_private_endpoint: "<Need to be unique>"
+      key_vault_sources_private_endpoint: "<Need to be unique>"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app:
+        azure_databricks: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"      
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    patch_schedule_recur_every: "1Month Second Wednesday"
+    patch_schedule_start_time: "22:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "04:00"
+
+  infrastructure_configuration:
+    env_type: "tst"

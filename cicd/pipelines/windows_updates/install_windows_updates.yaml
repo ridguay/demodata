@@ -1,0 +1,101 @@
+trigger: none
+pr: none
+schedules:
+- cron: 00 17,18 * * wed # 17 is 19h00 summer time. 18 is 19h00 winter time.
+  displayName: Check updates wednesday dev, sbx, pdv, iamtest
+  branches:
+    include:
+    - main
+  always: true
+- cron: 00 17,18 * * thu # 17 is 19h00 summer time. 18 is 19h00 winter time.
+  displayName: Check updates thursday tst
+  branches:
+    include:
+    - main
+  always: true
+- cron: 0 05,06,08,09 * * sat # 05,08 are summer time 07h00 and 10h00. 06,09 are winter time 07h00 and 10h10
+  displayName: Check updates saturday acc and prd
+  branches:
+    include:
+    - main
+  always: true
+
+parameters:
+  - name: data_domain
+    displayName: 'The data domain(s) to be deployed (space separated, "*" deploys to all in the environment) use abbreviations like cnw, pns & ind)'
+    type: string
+    default: '*'
+  - name: environment
+    displayName: 'The environment(s) you want to deploy to (space separated, "*" deploys to all).'
+    type: string
+    default: '*'
+  - name: rebootsetting
+    displayName: 'Specify if the VMs can be rebooted after the installation of the Windows Updates'
+    default: "never"
+    values:
+      - never
+      - always
+  - name: force
+    displayName: 'Skip the time window check'
+    type: boolean
+    default: false    
+
+variables:
+  - name: data_domain_list
+    ${{ if eq(parameters.data_domain, '*') }} :
+      value: cnw ind pns dm1 dm2 acs tkn bdt glm rsm
+    ${{ else }}:
+      value: ${{ parameters.data_domain }}
+  # If environment == '*', set the value to all environments
+  # Removing an environment from the list, will cause changes to that environment to never be deployed.
+  - name: environments
+    ${{ if eq(parameters.environment, '*') }}:
+      value: iam sbx pdv dev tst acc prd
+    ${{ else }}:
+      value: ${{ parameters.environment }}
+
+pool:
+  name: LPDAP-Pool-general
+
+stages:
+- stage: init
+  dependsOn: []
+  displayName: Check Date
+  pool: # LPDAP-Pool-general
+    vmImage: 'ubuntu-latest'  
+  jobs:
+  - job: init
+    displayName: Init
+    steps:
+    - checkout: self
+      displayName: Checkout cicd
+      condition: eq(variables['Build.Repository.Name'], 'cicd')
+      persistCredentials: true
+  - job: CheckDate
+    dependsOn: init
+    pool:
+      vmImage: 'ubuntu-latest'
+    displayName: Check Date
+    steps:
+    - task: PowerShell@2
+      name: Check_Date
+      inputs:
+        targetType: 'filepath'
+        filePath: '$(Build.SourcesDirectory)/pipelines/windows_updates/scripts/pipeline_run_check.ps1'        
+        azurePowershellVersion: LatestVersion
+
+ # Create a deploy stage for each data_domain and environment combination, skipping an env if not found in the `init.Run_details.ENVIRONMENT` variable
+- ${{ each data_domain in split(variables.data_domain_list, ' ')}}:
+  - ${{ each env in split(variables.environments, ' ') }}:
+    - stage: "Install_Updates_${{ data_domain }}_${{ replace(env, '-', '_') }}"
+      displayName: Install Windows Updates to ${{ data_domain }} ${{ env }}
+      dependsOn: [ "init" ]
+      condition: and(succeeded(), or(eq(${{ parameters.force }}, true), eq('true', dependencies.init.outputs['CheckDate.Check_Date.InstallUpdates'])))
+      jobs:
+      - template: templates/stage.install_windows_updates.yaml
+        parameters:
+          datadomainshort: ${{ data_domain }}
+          environment: ${{ env }}
+          rebootsetting: ${{ parameters.rebootsetting}}
+          subscription: LPDAP-${{ iif(eq( env , 'pdv'), 'PREDEV', upper(env)) }}
+          force: ${{ parameters.force }}

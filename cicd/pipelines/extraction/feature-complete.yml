@@ -1,0 +1,24 @@
+parameters:
+- name: artifactoryRepoUrl
+  type: string
+
+stages:
+  - template: templates/stage.build.yml@cicd
+    parameters:
+      artifactoryRepoUrl: ${{ parameters.artifactoryRepoUrl }}
+
+  - template: templates/stage.deploy.yml@cicd
+    parameters:
+      environment: dev
+      artifactoryRepoUrl: ${{ parameters.artifactoryRepoUrl }}
+      version: ${{ variables['Build.SourceBranchName'] }}
+      condition: succeeded()
+      dependsOn: [ "build_adf" ]
+
+  - template: templates/stage.deploy.yml@cicd
+    parameters:
+      environment: tst
+      artifactoryRepoUrl: ${{ parameters.artifactoryRepoUrl }}
+      version: ${{ variables['Build.SourceBranchName'] }}
+      condition: succeeded()
+      dependsOn: [ "build_adf" ]

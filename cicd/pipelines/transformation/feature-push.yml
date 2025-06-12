@@ -1,0 +1,30 @@
+parameters:
+  - name: environment
+    type: string
+
+  - name: domain
+    type: string
+
+  - name: post_deploy_job
+    type: string
+    default: " "
+
+stages:
+  - template: templates/stage.determine-user.yml@cicd
+
+  - template: templates/stage.deploy.yml@cicd
+    parameters:
+      dependsOn: [ "determine_user_stage" ]
+      environment: ${{ parameters.environment }}
+      data_domain: ${{ parameters.domain }}
+      post_deploy_job: ${{ parameters.post_deploy_job }}
+
+  - stage: "Deploy_IAM_to_${{ parameters.environment }}"
+    displayName: Deploy IAM permissions for Databricks to ${{ parameters.environment }}
+    dependsOn: ["deploy_${{ parameters.domain }}_to_${{ parameters.environment }}"]
+    jobs:
+    - template: cicd/job.iam-databricks-jobs.yml@iam
+      parameters:
+        azureserviceconnection: "lpdap-iam-dev"
+        env: ${{ parameters.environment }}
+        domain: ${{ parameters.domain }}

@@ -1,0 +1,45 @@
+sbx:
+  domain_variables:
+    abbreviation: "sap"
+    version: "01"
+    name: "sap_datasphere"
+    ip_addresses:
+      services_subnet: "10.169.80.208/28"
+      storage_dfs_private_endpoint: "10.169.80.212"
+      storage_blob_private_endpoint: "10.169.80.213"
+
+  infrastructure_configuration:
+    storage_account:
+      configure_default_network_rules_storage: true
+
+pdv:
+  domain_variables:
+    abbreviation: "sap"
+    deploy_roles_data_engineers: false
+    version: "01"
+    name: "sap_datasphere"
+    ip_addresses: 
+      services_subnet: "10.163.48.208/28"
+      storage_dfs_private_endpoint: "10.163.48.212"
+      storage_blob_private_endpoint: "10.163.48.213"
+
+  infrastructure_configuration:
+    storage_account:
+      configure_default_network_rules_storage: true
+
+
+dev:
+  domain_variables:
+    name: "sap_dataspehere"
+    version: "01"
+    abbreviation: "sap"
+    deploy_roles_data_engineers: false
+    virtual_machine_size: "Standard_D4_v4"
+    ip_addresses:
+      services_subnet: "10.166.93.144/28"
+      storage_dfs_private_endpoint: "10.166.93.148"
+      storage_blob_private_endpoint: "10.166.93.149"
+
+  infrastructure_configuration:
+    storage_account:
+      configure_default_network_rules_storage: true

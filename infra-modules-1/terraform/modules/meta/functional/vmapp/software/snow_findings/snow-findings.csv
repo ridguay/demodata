@@ -1,0 +1,64 @@
+Description;Reason;Path;Key;Value;Type
+EnableCertPaddingCheck 32-bit;TEN-166555: The remote system may be in a vulnerable state to CVE-2013-3900 due to a missing or misconfigured registry keys;HKLM:\Software\Microsoft\Cryptography\Wintrust\Config;EnableCertPaddingCheck;1;String
+EnableCertPaddingCheck 64-bit;TEN-166555: The remote system may be in a vulnerable state to CVE-2013-3900 due to a missing or misconfigured registry keys;HKLM:\Software\Wow6432Node\Microsoft\Cryptography\Wintrust\Config;EnableCertPaddingCheck;1;String
+Specalutive Execution Fix 1;TEN-132101: The remote host has not properly mitigated a series of known speculative execution vulnerabilities. CVE-2017-5715 CVE-2017-5754;HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management;FeatureSettingsOverride;8264;DWORD
+Specalutive Execution Fix 2;TEN-132101: The remote host has not properly mitigated a series of known speculative execution vulnerabilities. CVE-2017-5715 CVE-2017-5754;HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management;FeatureSettingsOverrideMask;3;DWORD
+Specalutive Execution Fix 3 (Hyper-V installed);TEN-132101: The remote host has not properly mitigated a series of known speculative execution vulnerabilities. CVE-2017-5715 CVE-2017-5754;HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Virtualization;MinVmVersionForCpuBasedMitigations;1.0;STRING
+Disable SMB v1;TEN-160486: Disable SMB v1;HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters;SMB1;0;DWORD
+Disable SMB v2;TEN-160486: Disable SMB v2;HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters;SMB2;0;DWORD
+Disable SMB v3;TEN-160486: Disable SMB v3;HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters;SMB3;0;DWORD
+Block Cross Protocol Excel.exe;TEN-178275: CVE-2023-36884;HKLM:SOFTWARE\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BLOCK_CROSS_PROTOCOL_FILE_NAVIGATION;Excel.exe;1;DWORD
+Block Cross Protocol Graph.exe;TEN-178275: CVE-2023-36884;HKLM:SOFTWARE\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BLOCK_CROSS_PROTOCOL_FILE_NAVIGATION;Graph.exe;1;DWORD
+Block Cross Protocol MSAccess.exe;TEN-178275: CVE-2023-36884;HKLM:SOFTWARE\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BLOCK_CROSS_PROTOCOL_FILE_NAVIGATION;MSAccess.exe;1;DWORD
+Block Cross Protocol MsPub.exe;TEN-178275: CVE-2023-36884;HKLM:SOFTWARE\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BLOCK_CROSS_PROTOCOL_FILE_NAVIGATION;MsPub.exe;1;DWORD
+Block Cross Protocol PowerPnt.exe;TEN-178275: CVE-2023-36884;HKLM:SOFTWARE\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BLOCK_CROSS_PROTOCOL_FILE_NAVIGATION;PowerPnt.exe;1;DWORD
+Block Cross Protocol PowerPoint.exe;TEN-178275: CVE-2023-36884;HKLM:SOFTWARE\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BLOCK_CROSS_PROTOCOL_FILE_NAVIGATION;PowerPoint.exe;1;DWORD
+Block Cross Protocol Visio.exe;TEN-178275: CVE-2023-36884;HKLM:SOFTWARE\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BLOCK_CROSS_PROTOCOL_FILE_NAVIGATION;Visio.exe;1;DWORD
+Block Cross Protocol WinProj.exe;TEN-178275: CVE-2023-36884;HKLM:SOFTWARE\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BLOCK_CROSS_PROTOCOL_FILE_NAVIGATION;WinProj.exe;1;DWORD
+Block Cross Protocol WinWord.exe;TEN-178275: CVE-2023-36884;HKLM:SOFTWARE\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BLOCK_CROSS_PROTOCOL_FILE_NAVIGATION;WinWord.exe;1;DWORD
+Block Cross Protocol Wordpad.exe;TEN-178275: CVE-2023-36884;HKLM:SOFTWARE\Policies\Microsoft\Internet Explorer\Main\FeatureControl\FEATURE_BLOCK_CROSS_PROTOCOL_FILE_NAVIGATION;Wordpad.exe;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SOFTWARE\WOW6432Node\Microsoft\.NETFramework\v2.0.50727;SystemDefaultTlsVersions;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SOFTWARE\WOW6432Node\Microsoft\.NETFramework\v2.0.50727;SchUseStrongCrypto;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SOFTWARE\WOW6432Node\Microsoft\.NETFramework\v4.0.30319;SystemDefaultTlsVersions;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SOFTWARE\WOW6432Node\Microsoft\.NETFramework\v4.0.30319;SchUseStrongCrypto;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SOFTWARE\Microsoft\.NETFramework\v2.0.50727;SystemDefaultTlsVersions;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SOFTWARE\Microsoft\.NETFramework\v2.0.50727;SchUseStrongCrypto;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SOFTWARE\Microsoft\.NETFramework\v4.0.30319;SystemDefaultTlsVersions;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SOFTWARE\Microsoft\.NETFramework\v4.0.30319;SchUseStrongCrypto;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\AES 128/128;Enabled;4294967295;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\AES 256/256;Enabled;4294967295;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\DES 56/56;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\NULL;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\RC2 128/128;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\RC2 40/128;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\RC2 56/128;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\RC4 128/128;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\RC4 40/128;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\RC4 56/128;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\RC4 64/128;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Ciphers\Triple DES 168;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\PCT 1.0\Client;DisabledByDefault;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\PCT 1.0\Client;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\PCT 1.0\Server;DisabledByDefault;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\PCT 1.0\Server;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 2.0\Client;DisabledByDefault;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 2.0\Client;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 2.0\Server;DisabledByDefault;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 2.0\Server;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 3.0\Client;DisabledByDefault;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 3.0\Client;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 3.0\Server;DisabledByDefault;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\SSL 3.0\Server;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.0\Client;DisabledByDefault;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.0\Client;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.0\Server;DisabledByDefault;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.0\Server;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.1\Client;DisabledByDefault;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.1\Client;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.1\Server;DisabledByDefault;1;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.1\Server;Enabled;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client;DisabledByDefault;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client;Enabled;4294967295;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Server;DisabledByDefault;0;DWORD
+Windows web servers should be configured to use secure communication protocols;NN Securitybenchmark;HKLM:SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Server;Enabled;4294967295;DWORD
+

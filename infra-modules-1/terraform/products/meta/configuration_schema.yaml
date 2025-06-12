@@ -1,0 +1,68 @@
+# Read every key, except for the keys starting with an underscore
+# Then all keys that do not start with an underscore are considered to be part of the schema
+# All keys starting with an underscore are considered 'documentation', and not part of the schema
+
+env_variables:
+  subscription_id:
+    _type: "string"
+    _description: "ID of the subscription to deploy to."
+  tenant_id:
+    _type: "string"
+    _description: "ID of the tenant of Nationale Nederlanden."
+  environment:
+    virtual_network_data:
+      _type: "map"
+      _description: "Information of how the networking is setup. This should contain the resource_group_name and name key, containing the name of the resource group containing the networking and the name of the virtual network respectively."
+      resource_group_name:
+        _type: "string"
+        _description: "Name of the resource group containing the networking."
+    ip_addresses:
+      databricks_public_subnet:
+        _type: "string"
+        _description: "Azure Databricks Workspace Public subnet"
+      databricks_private_subnet:
+        _type: "string"
+        _description: "Azure Databricks Workspace Private subnet"
+      databricks_private_endpoint:
+        _type: "string"
+        _description: "Azure Databricks Workspace Private endpoint"
+      envs_key_vault_private_endpoint:
+        _type: "string"
+        _description: "Envs key vault blob private endpoint"
+      iam_key_vault_private_endpoint:
+        _type: "string"
+        _description: "IAM key vault blob private endpoint"
+      logging_blob_private_endpoint:
+        _type: "string"
+        _description: "Logging storage account blob private endpoint"
+      logging_dfs_private_endpoint:
+        _type: "string"
+        _description: "Logging storage account dfs private endpoint"
+      services_subnet:
+        _type: "string"
+        _description: "Services subnet ip range"
+      tfstate_blob_private_endpoint:
+        _type: "string"
+        _description: "TFstate account blob private endpoint"
+      tfstate_subnet:
+        _type: "string"
+        _description: "TFstate subnet ip range"
+      utils_blob_private_endpoint:
+        _type: "string"
+        _description: "Utils storage account blob private endpoint"
+    tags:
+      _type: "map"
+      _description: "Tags all resources will get. Should be key-value pairs."
+    utils_storage_tags:
+      _type: "map"
+      _description: "Tags that should be placed on the Utils storage account."
+  object_ids:
+    devops_engineers:
+      _type: "map"
+      _description: "Map of the names of the platform engineers to their object ids. Make sure you use the object ID of the CPA accounts. Before the platform team was formed, the engineers working on the platform were called 'DevOps engineers' hence the name."
+    app_ids:
+      _type: "map"
+      _description: "Map of the app ids that need access to the evns key vault in meta"      
+  allowed_ips:
+    _type: "list"
+    _description: "Map of the ip's allowed access to the key vaults"

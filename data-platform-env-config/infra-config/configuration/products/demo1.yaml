@@ -1,0 +1,109 @@
+user_object_ids:
+  data_engineers: 
+    - jacob
+
+# Advisable to use this as a domain testing instance
+infrastructure_configuration:
+  instance_type: domain
+  uc_enabled: false
+  legacy_clusters_enabled: true
+  deploy_azure_hosted_integration_runtime: true
+  # The following Databricks related entries allow for defining cluster configuration and pypi packages. 
+  # There are default values for all parameters (see modules/functional/variables.tf -> databricks_functional_vars), so you only have to specify default values that you want to overwrite
+  # This can be done across all environments (here), or for a specific environment (add this to env-specific infrastructure-configuration below)
+  databricks_main_clusters:
+    spark_version_id: "15.4.x-scala2.12"
+  databricks_user_specific_clusters: {}
+  databricks_pypi_packages: 
+    - "faker==29.0.0"
+    - "holidays==0.56"
+    - "pydantic==2.3.0"  # This is subtracted by modules/base/main.tf from the set of packages for UC
+    - "pytest==8.3.3"
+  storage_account:
+    shared_access_key_enabled: false
+
+sbx:
+  domain_variables:
+    abbreviation: "dm1"
+    virtual_machine_size: "Standard_D4_v4"  
+    name: "demo1"
+    version: "01"
+    deploy_roles_data_engineers: false
+    ip_addresses:
+      services_subnet: "10.169.80.128/27"
+      databricks_public_subnet: "10.169.83.0/26"
+      databricks_private_subnet: "10.169.83.64/26"
+      virtual_machine_1: "10.169.80.132"
+      virtual_machine_2: "10.169.80.133"
+      virtual_machine_3: "10.169.80.140"
+      virtual_machine_4: "10.169.80.141"
+      data_factory_private_endpoint: "10.169.80.134"
+      data_factory_02_private_endpoint: "10.169.80.142"      
+      databricks_private_endpoint: "10.169.80.135"
+      storage_dfs_private_endpoint: "10.169.80.136"
+      storage_blob_private_endpoint: "10.169.80.137"
+      storage_table_private_endpoint: "10.169.80.143"        
+      key_vault_infra_private_endpoint: "10.169.80.138"
+      key_vault_sources_private_endpoint: "10.169.80.139"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app:
+        azure_databricks: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"      
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    patch_schedule_recur_every: "1Month Second Wednesday"
+    patch_schedule_start_time: "22:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "04:00"
+
+  infrastructure_configuration:
+    env_type: "dev"
+
+pdv:
+  domain_variables:
+    abbreviation: "dm1"
+    virtual_machine_size: "Standard_D4_v4"  
+    name: "demo1"
+    entra_group_names:
+      use_catalog: "GSCDCA-lpdap-Unity-reconfig-usecatalog-bronze"
+    version: "01"
+    deploy_roles_data_engineers: false
+    ip_addresses:
+      services_subnet: "10.163.48.0/27"
+      databricks_public_subnet: "10.163.49.0/26"
+      databricks_private_subnet: "10.163.49.64/26"
+      virtual_machine_1: "10.163.48.4"
+      virtual_machine_2: "10.163.48.5"
+      virtual_machine_3: "10.163.48.12"
+      virtual_machine_4: "10.163.48.13"
+      data_factory_private_endpoint: "10.163.48.6"
+      data_factory_02_private_endpoint: "10.163.48.14"      
+      databricks_private_endpoint: "10.163.48.7"
+      storage_dfs_private_endpoint: "10.163.48.8"
+      storage_blob_private_endpoint: "10.163.48.9"
+      storage_table_private_endpoint: "10.163.48.15"
+      key_vault_infra_private_endpoint: "10.163.48.10"
+      key_vault_sources_private_endpoint: "10.163.48.11"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app:
+        azure_databricks: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"      
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    patch_schedule_recur_every: "1Month Second Wednesday"
+    patch_schedule_start_time: "22:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "04:00"
+
+  infrastructure_configuration:
+    env_type: "dev"

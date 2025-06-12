@@ -1,0 +1,48 @@
+#########################
+# Template to generate a git tag based on conventional commits.
+# This template analyses all commits since the last tag and generates a new git tag based on that analysis.
+# It also generates a CHANGELOG.md in the repository to keep track of the changes.
+#########################
+
+variables:
+  - group: Azure DevOps PAT Semantic Release
+
+stages:
+- stage: generate_tag
+  pool:
+    name: LPDAP-Pool-general
+  jobs:
+  - job: generate_tag
+    steps:
+    - task: AzureKeyVault@2
+      inputs:
+        azureSubscription: 'sp-lpdap-meta'
+        KeyVaultName: 'kv-lpdapv001-meta-envs'
+        SecretsFilter: 'Azure-DevOps-PAT-Semantic-Release'
+        RunAsPreJob: false
+    # Set the pipeline name to display the repository it was triggered for
+    - task: Bash@3
+      displayName: "Update Pipeline Name"
+      inputs:
+        targetType: 'inline'
+        script: |
+          # Set the pipeline name dynamically, so it's easier to distinguish what the pipeline does from the overview
+          pipeline_name="generate-tag for ${BUILD_REPOSITORY_NAME}"
+          echo "##vso[build.updatebuildnumber]$pipeline_name"
+    - task: Bash@3
+      name: semantic_release
+      displayName: "Generate tag and CHANGELOG.md"
+      env:
+        ADO_PAT: $(Azure-DevOps-PAT-Semantic-Release)
+        ADO_USER_NAME: $(DEV_OPS_USER_NAME)
+      inputs:
+        targetType: 'inline'
+        script: |
+          pip install poetry==1.5.1
+
+          # Save the git credentials to an environment variable
+          # It should have the format `user:personal_access_token`
+          export GIT_CREDENTIALS="$ADO_USER_NAME:$ADO_PAT"
+
+          # Trigger semantic-release
+          npx semantic-release

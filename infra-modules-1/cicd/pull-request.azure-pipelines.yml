@@ -1,0 +1,108 @@
+name: infra-modules-pull-request-pipeline
+
+# Never trigger pipeline, it will be queued when creating a pull request in Azure DevOps
+trigger: none
+
+pool:
+  name: LPDAP-Pool-general
+
+jobs:
+- job: PR_Validation
+  steps:
+    - task: CmdLine@2
+      displayName: "Validate Terraform Docs"
+      inputs:
+        script: |
+          terraform-docs --version
+          
+          for path in $(find terraform/ -type f -name "main.tf")
+          do
+            dir_path=$(echo $path | awk '{ print substr( $0, 1, length($0)-8 ) }')
+            cd ${SYSTEM_DEFAULTWORKINGDIRECTORY}/$dir_path
+            terraform-docs markdown table --config ${SYSTEM_DEFAULTWORKINGDIRECTORY}/terraform-docs.yml .
+          done
+          cd ${SYSTEM_DEFAULTWORKINGDIRECTORY}
+          
+          if [[ $(git status --porcelain) ]]; then
+            echo 'Terraform modules documentation is not up-to-date, run the command "terraform-docs markdown table --config $root/terraform-docs.yml {path/to/module}" for the following modules (1-by-1):'
+            git status --porcelain
+            exit 1
+          fi
+        failOnStderr: true
+
+    - task: CmdLine@2
+      displayName: "Validate Terraform Modules"
+      condition: always()
+      inputs:
+        script: |
+          cd ${SYSTEM_DEFAULTWORKINGDIRECTORY}/terraform
+          terraform fmt -recursive -check
+        failOnStderr: true
+
+    - task: CmdLine@2
+      displayName: "Validate Terragrunt Files"
+      condition: always()
+      inputs:
+        script: |
+          cd ${SYSTEM_DEFAULTWORKINGDIRECTORY}/terraform
+          terragrunt hclfmt --terragrunt-check
+        failOnStderr: true
+
+    - task: CmdLine@2
+      displayName: "Check file endings"
+      condition: always()
+      inputs:
+        script: |
+          cd ${SYSTEM_DEFAULTWORKINGDIRECTORY}
+          bash cicd/check_for_file_endings.sh terraform/modules/domain/functional/databricks/artifactory-init-scripts/artifactory_init.sh.tpl
+          bash cicd/check_for_file_endings.sh terraform/modules/domain/functional/databricks/artifactory-init-scripts-legacy/artifactory_init.sh.tpl
+        failOnStderr: true
+        
+
+    - task: CmdLine@2
+      displayName: "Poetry Install"
+      inputs:
+        script: |
+          echo "##[command]pip3 install --upgrade requests"
+          pip3 install --upgrade requests
+
+          echo 'Installing Packaging==22.0...'
+          pip install packaging==22.0
+
+          echo "##[command]pip install poetry==1.5.1"
+          pip install poetry==1.5.1
+
+          echo "##[command]poetry install --no-dev"
+          poetry install --no-dev
+
+    - task: Bash@3
+      displayName: "Validate Products Configuration Documents"
+      name: Validate_Env_schema
+      env:
+        TERRAGRUNT_TERRAFORM_DIR: "$(System.DefaultWorkingDirectory)/terraform"
+      inputs:
+        targetType: 'inline'
+        script: |
+          cd ${SYSTEM_DEFAULTWORKINGDIRECTORY}
+
+          # Loop over all directories in the 'products' directory
+          for product_path in $(ls -d terraform/products/*/)
+          do
+            product_name="${product_path%/}"
+            product_name="${product_name##*/}"
+            # The 'tee' command writes the output to stdout and a file
+            echo "##[command]poetry run python 'cicd/config_schema_validator/main.py' ${product_path} ${product_path}configuration_schema.yaml"
+            poetry run python 'cicd/config_schema_validator/main.py' ${product_path} ${product_path}configuration_schema.yaml | tee /tmp/${product_name}.out
+          done
+
+          # Loop over all files that are written in the step before and crash the pipeline if there is any output
+          for product_path in $(ls -d terraform/products/*/)
+          do
+            product_name="${product_path%/}"
+            product_name="${product_name##*/}"
+            if [ ! "$(cat /tmp/${product_name}.out)" = "{}" ]; then
+              exit 1
+            fi
+          done
+
+        failOnStderr: true

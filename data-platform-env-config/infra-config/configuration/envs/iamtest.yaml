@@ -1,0 +1,32 @@
+environment_variables:
+  env_name: "iam"
+  container_name: "iamtest"
+  client_id: "483b49ee-69c6-4e46-b0b1-a72225a6deba"
+  subscription_id: "6f97d752-e2f2-4a0e-840c-8dd14889c37e"
+  tenant_id: "fed95e69-8d73-43fe-affb-a7d85ede36fb"
+  iam_enterprise_object_id: "f9006502-583c-41db-935d-ada058d2aaa2" # Needed for RBAC
+  iam_enterprise_app_id: "7e09bb69-412f-4016-b328-cb9d09a27a36" # Needed in Databricks
+  subscription_object_ids:
+    iamtest: "4ad26af4-0b48-48af-b0e7-be4cf84d7a23"
+  virtual_network_data:
+    resource_group_name: "AzureVnet-WE"
+    name: "NNANPSpoke-WE"
+  tags:
+    Now_ApplicationService: "AS LPDAP Azure - DEV"
+    Now_Environment: "Development"
+    Now_CostCenter: "V0015179"
+    Now_ManagedByGroup: "NL CFG LP/CIO"
+    Now_SupportGroup: "NL LP/CIO/LPDAP Azure"
+    Now_Location: "Netherlands"
+    terraform: true
+  vmapps:
+    gallery_name: "lpdap_gallery"
+    gallery_rsg: "rg-lpdapv001-meta"
+    gallery_subscription_id: "8e5fbe4b-a78e-4e74-b38c-15f7fbe4cf9b"
+    apps: # The maximum vm application per vm is 25, one slot is taken by the Azure Team for windows-cis-hardening application
+      snow_findings: "1.0.0"
+
+devops_engineers:
+  - henri
+  - menno
+  - bala
