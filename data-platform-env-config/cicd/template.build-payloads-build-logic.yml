@@ -1,0 +1,146 @@
+parameters:
+- name: action
+  type: string
+  default: "apply"
+
+- name: config_file
+  type: string
+  # By default include all config files in the artifact
+  default: "*"
+
+stages:
+- stage: build_payloads
+  # By setting no dependencies, this runs in parallel with the previous job (instead of waiting for it).
+  dependsOn: []
+  pool:
+    name: LPDAP-Pool-general
+
+  jobs:
+  - job:
+    displayName: "Build"
+    uses:
+      repositories:
+      - data-pipeline-core
+      - data-logic-core
+    steps:
+    - checkout: self
+      submodules: recursive
+
+    # This is needed because a script in that repo is referenced by a CI/CD template
+    - checkout: data-platform-env-config
+
+    - task: UsePythonVersion@0
+      displayName: "Use Python Version"
+      inputs:
+        versionSpec: '3.8.10'
+
+    # If a specific config file is specified, check if it exists
+    - ${{ if and(not(eq(parameters.config_file, '*')), eq(parameters.action, 'apply')) }}:
+      - task: CmdLine@2
+        displayName: "Check If Config File Exists"
+        inputs:
+          script: |
+            echo "Checking path: ${BUILD_REPOSITORY_LOCALPATH}/src/ingestion/sources/${{parameters.config_file}}/pipelines.py"
+            if [ -f "${BUILD_SOURCESDIRECTORY}/ingestion/src/ingestion/sources/${{parameters.config_file}}/pipelines.py" ]; then
+              echo Config file ${{ parameters.config_file }} exists.
+            else
+              echo Given config file ${{ parameters.config_file }} does not exist.
+              exit 1
+            fi
+
+    - task: Bash@3
+      displayName: "Build Payload"
+      inputs:
+        filePath: "$(Build.SourcesDirectory)/data-platform-env-config/scripts/build_payloads.sh"
+        workingDirectory: ingestion
+        # Generate payloads for all sources (*) for all environments (dev tst acc prd)
+        ${{ if not(eq(parameters.action, 'apply')) }}:
+          # Generate no payloads if the action isn't 'apply' (but do generate an 'empty' artifact).
+          arguments: '"" "pipelines" "${{ parameters.config_file }}"'
+        ${{ if eq(parameters.action, 'apply') }}:
+          # Generate the payloads of the specified config file for every environment if the action is 'apply'
+          arguments: '"dev tst acc prd" "pipelines" "${{ parameters.config_file }}"'
+        failOnStderr: false
+
+    - task: CmdLine@2
+      displayName: "Remove Poetry cache"
+      condition: always()
+      inputs:
+        script: |
+          # Remove poetry cache to prevent future pipelines from failing
+          rm -rf ~/.cache/pypoetry/
+
+    - publish: 'ingestion/pipelines'
+      displayName: 'Publish Payload for Upload'
+      artifact: pipelines_artifact
+
+- stage: build_logic
+  # By setting no dependencies, this runs in parallel with the previous job (instead of waiting for it).
+  dependsOn: []
+  pool:
+    name: LPDAP-Pool-general
+  jobs:
+  - job:
+    displayName: "Build_Logic"
+    uses:
+      repositories:
+      - data-logic-core
+      - data-pipeline-core
+    steps:
+    - checkout: self
+      submodules: recursive
+
+    # This is needed because a script in that repo is referenced by a CI/CD template
+    - checkout: data-platform-env-config
+
+    - task: UsePythonVersion@0
+      displayName: "Use Python Version"
+      inputs:
+        versionSpec: '3.8.10'
+    
+    # If a specific config file is specified, then this run is not a full release, but a deploy to dev
+    # So generate a new alpha version
+    - ${{ if and(not(eq(parameters.config_file, '*')), eq(parameters.action, 'apply')) }}:
+      - task: CmdLine@2
+        displayName: "Generate new alpha version"
+        inputs:
+          script: |
+            cd ${BUILD_SOURCESDIRECTORY}/ingestion
+
+            echo 'Installing Packaging==22.0...'
+            pip install packaging==22.0
+
+            pip install poetry==1.5.1
+
+            # Get the current version of the package
+            current_version=$(poetry version -s)
+
+            # Append the current time to the version to make sure each package has a unique versioning
+            # that is also higher than the previous deployment (if there were any)
+            new_version=${current_version}-alpha.$(date +%Y%m%d%H%M%S)
+
+            echo "Deploying as version $new_version"
+
+            # Set the version in the toml file, so poetry build builds it under that name
+            poetry version $new_version
+
+    - task: Bash@3
+      displayName: "Build Logic"
+      inputs:
+        filePath: "$(Build.SourcesDirectory)/data-platform-env-config/scripts/build_logic.sh"
+        workingDirectory: ingestion
+        # Generate logic artifact
+        arguments: '"logic" "${{ parameters.config_file }}"'
+        failOnStderr: false
+
+    - task: CmdLine@2
+      displayName: "Remove Poetry cache"
+      condition: always()
+      inputs:
+        script: |
+          # Remove poetry cache to prevent future pipelines from failing
+          rm -rf ~/.cache/pypoetry/
+
+    - publish: 'ingestion/logic'
+      displayName: 'Publish Logic for Upload'
+      artifact: logic_artifact

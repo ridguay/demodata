@@ -1,0 +1,1 @@
+This folder is a duplicate of the databricks_workspace_configuration. The folder in databricks_workspace_configuration will be removed in the future.

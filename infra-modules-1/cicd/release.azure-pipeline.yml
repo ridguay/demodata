@@ -1,0 +1,24 @@
+name: infra-modules-release-pipeline
+
+trigger:
+ tags:
+  include:
+      - '*'
+
+resources:
+  repositories:
+  - repository: build-agents
+    type: git
+    name: LPDAP_Azure/build-agents
+    ref: main
+
+extends:
+  template: cicd/release-repository.yml@build-agents
+  parameters:
+    repository_name: "infra-modules"
+    build_steps:
+    - task: CmdLine@2
+      displayName: "Move files to build directory"
+      inputs:
+        script: |
+          cp -r terraform ${BUILD_STAGINGDIRECTORY}/terraform

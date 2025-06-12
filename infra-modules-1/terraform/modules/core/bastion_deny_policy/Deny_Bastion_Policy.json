@@ -1,0 +1,14 @@
+    {
+        "if": {
+          "anyOf": [
+            {
+              "field": "type",
+              "like": "Microsoft.Network/bastionHosts*"
+            }
+          ]
+        },
+        "then": {
+          "effect": "deny"
+        }
+    }
+    

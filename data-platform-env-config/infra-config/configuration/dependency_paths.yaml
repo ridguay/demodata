@@ -1,0 +1,23 @@
+# These lists are in alphabetical order
+domain:
+  base: "products/domain/base/"
+  functional: "products/domain/functional/"
+  adf_infra_components: "products/domain/functional"
+  data_factory: "products/domain/functional"
+  databricks_base: "products/domain/base/databricks" 
+  databricks_functional: "products/domain/functional"
+  key_vault_infra: "products/domain/functional"
+  key_vault_sources: "products/domain/base/key_vault_sources"
+  pipeline_notebooks: "products/domain/operational/databricks/deploy_pipeline_notebooks"
+  resource_group: "products/domain/base/resource_group"
+  self_hosted_integration_runtime: "products/domain/functional"
+  storage_account: "products/domain/base/storage_account"
+  user_specific_clusters: "products/domain/functional"
+  services_subnet: "products/domain/platform/networking/services_subnet"
+
+platform:
+  platform__data_factory_subnet: "products/platform/networking/data_factory_subnet"
+  platform__key_vault_subnet: "products/platform/networking/key_vault_subnet"
+  platform__log_analytics_workspace: "products/platform/log_analytics_workspace"
+  platform__platform_access_subnet: "products/platform/networking/platform_access_subnet"
+  platform__storage_subnet: "products/platform/networking/storage_subnet"

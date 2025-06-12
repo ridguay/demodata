@@ -1,0 +1,306 @@
+user_object_ids: 
+  data_engineers:
+    - jacob
+    - yuki
+    - joost
+    - krystel
+    - sarah
+    # -------- Not data engineers of the team, but still require access -------- #
+    - rob
+    - wilma
+
+infrastructure_configuration:
+  instance_type: domain
+  deploy_azure_hosted_integration_runtime: true
+  uc_enabled: true
+  legacy_clusters_enabled: false
+  # The following Databricks related entries allow for defining cluster configuration and pypi packages. 
+  # There are default values for all parameters (see modules/functional/variables.tf -> databricks_functional_vars), so you only have to specify default values that you want to overwrite
+  # This can be done across all environments (here), or for a specific environment (add this to env-specific infrastructure-configuration below)
+  databricks_main_clusters:
+    spark_version_id: "15.4.x-scala2.12"
+    autoterminate_after_minutes: 30
+    minimum_workers: 1
+    maximum_workers: 8
+  databricks_user_specific_clusters: {}
+  databricks_pypi_packages: 
+    - "faker==29.0.0"
+    - "holidays==0.56"
+    - "pydantic==2.3.0"  # This is subtracted by modules/base/main.tf from the set of packages for UC
+    - "pytest==8.3.3"
+  storage_account:
+    shared_access_key_enabled: false
+  deploy_interface_storage_account: false
+
+sbx:
+  domain_variables:
+    abbreviation: "cnw"
+    version: "01"
+    name: "customer_workflow"
+    virtual_machine_size: "Standard_D4_v4"
+    ip_addresses:
+      services_subnet: "10.169.80.0/27"
+      databricks_public_subnet: "10.169.81.0/26"
+      databricks_private_subnet: "10.169.81.64/26"
+      virtual_machine_1: "10.169.80.4"
+      virtual_machine_2: "10.169.80.5"
+      virtual_machine_3: "10.169.80.12"
+      virtual_machine_4: "10.169.80.13"
+      data_factory_private_endpoint: "10.169.80.6"
+      data_factory_02_private_endpoint: "10.169.80.14"
+      databricks_private_endpoint: "10.169.80.7"
+      storage_dfs_private_endpoint: "10.169.80.8"
+      storage_blob_private_endpoint: "10.169.80.9"
+      storage_table_private_endpoint: "10.169.80.15"      
+      key_vault_infra_private_endpoint: "10.169.80.10"
+      key_vault_sources_private_endpoint: "10.169.80.11"
+      interface_storage_dfs_private_endpoint: "10.169.80.16"
+      interface_storage_blob_private_endpoint: "10.169.80.17"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    patch_schedule_recur_every: "1Month Second Wednesday"
+    patch_schedule_start_time: "19:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"
+  
+  infrastructure_configuration:
+    # Type of platform to deploy. Possible values: dev, tst, acc, prd.
+    # Default: same as environment_variables.env_name
+    env_type: "dev"
+    uc_enabled: false
+
+pdv:
+  domain_variables:
+    abbreviation: "cnw"
+    version: "01"
+    name: "customer_workflow"
+    entra_group_names:
+      use_catalog: "GSCDCA-lpdap-Unity-reconfig-usecatalog-bronze"
+    virtual_machine_size: "Standard_D4_v4"
+    ip_addresses: 
+      services_subnet: "10.163.48.128/27"
+      databricks_public_subnet: "10.163.51.0/26"
+      databricks_private_subnet: "10.163.51.64/26"
+      virtual_machine_1: "10.163.48.132"
+      virtual_machine_2: "10.163.48.133"
+      virtual_machine_3: "10.163.48.140"
+      virtual_machine_4: "10.163.48.141"
+      data_factory_private_endpoint: "10.163.48.134"
+      data_factory_02_private_endpoint: "10.163.48.142"
+      databricks_private_endpoint: "10.163.48.135"
+      storage_dfs_private_endpoint: "10.163.48.136"
+      storage_blob_private_endpoint: "10.163.48.137"
+      storage_table_private_endpoint: "10.163.48.143"
+      key_vault_infra_private_endpoint: "10.163.48.138"
+      key_vault_sources_private_endpoint: "10.163.48.139"
+      interface_storage_dfs_private_endpoint: "10.163.48.144"
+      interface_storage_blob_private_endpoint: "10.163.48.145"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+    patch_schedule_recur_every: "1Month Second Wednesday"
+    patch_schedule_start_time: "19:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"
+  
+  infrastructure_configuration:
+    # Type of platform to deploy. Possible values: dev, tst, acc, prd.
+    # Default: same as environment_variables.env_name
+    env_type: "dev"
+    uc_enabled: true
+    configure_default_network_rules_storage: false
+    storage_account_extra_tags:
+      PolicyException0003: "Needed for SAP CDC Connection"
+
+dev:
+  domain_variables:
+    name: "customer_workflow"
+    version: "01"
+    abbreviation: "cnw"
+    entra_group_names:
+      use_catalog: "GSCPCA-ldap-Unity-cnw-dev-usecatalog-bronze"
+    # The following entry sets up a Git sync for the dev Azure Data Factory instance so data engineers can use CI/CD
+    data_factory_git_config:
+      account_name: "NN-Life-Pensions"
+      branch_name: "develop"
+      project_name: "LPDAP_Data Customer Workflow"
+      repository_name: "extraction"
+      root_folder: "/adf/"
+    virtual_machine_size: "Standard_D4_v4"
+    ip_addresses:
+      services_subnet: "10.166.93.0/27"
+      databricks_public_subnet: "10.165.161.128/26"
+      databricks_private_subnet: "10.165.161.192/26"
+      virtual_machine_1: "10.166.93.4"
+      virtual_machine_2: "10.166.93.5"
+      virtual_machine_3: "10.166.93.12"
+      virtual_machine_4: "10.166.93.13"
+      data_factory_private_endpoint: "10.166.93.6"
+      data_factory_02_private_endpoint: "10.166.93.14"
+      databricks_private_endpoint: "10.166.93.7"
+      storage_dfs_private_endpoint: "10.166.93.8"
+      storage_blob_private_endpoint: "10.166.93.9"
+      storage_table_private_endpoint: "10.166.93.15"
+      key_vault_infra_private_endpoint: "10.166.93.10"
+      key_vault_sources_private_endpoint: "10.166.93.11"
+      interface_storage_dfs_private_endpoint: "10.166.93.16"
+      interface_storage_blob_private_endpoint: "10.166.93.17"
+
+    object_ids:
+      extra_data_engineers:
+        - wilma
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    patch_schedule_recur_every: "1Month Second Wednesday"
+    patch_schedule_start_time: "19:00"
+    patch_schedule_start_date: "2021-03-02"
+    patch_schedule_end_time: "03:00"
+
+  infrastructure_configuration:
+    configure_default_network_rules_storage: false
+    storage_account_extra_tags:
+      PolicyException0003: "Needed for SAP CDC Connection"
+
+tst:
+  domain_variables:
+    name: "customer_workflow"
+    version: "01"
+    abbreviation: "cnw"
+    entra_group_names:
+      use_catalog: "GSCPCA-ldap-Unity-cnw-tst-usecatalog-bronze"
+    virtual_machine_size: "Standard_D4_v4"
+    ip_addresses:
+      services_subnet: "10.172.9.0/27"
+      databricks_public_subnet: "10.165.165.128/26"
+      databricks_private_subnet: "10.165.165.192/26"
+      virtual_machine_1: "10.172.9.4"
+      virtual_machine_2: "10.172.9.5"
+      virtual_machine_3: "10.172.9.12"
+      virtual_machine_4: "10.172.9.13"
+      data_factory_private_endpoint: "10.172.9.6"
+      data_factory_02_private_endpoint: "10.172.9.14"
+      databricks_private_endpoint: "10.172.9.7"
+      storage_dfs_private_endpoint: "10.172.9.8"
+      storage_blob_private_endpoint: "10.172.9.9"
+      storage_table_private_endpoint: "10.172.9.15"
+      key_vault_infra_private_endpoint: "10.172.9.10"
+      key_vault_sources_private_endpoint: "10.172.9.11"
+      interface_storage_dfs_private_endpoint: "10.172.9.16"
+      interface_storage_blob_private_endpoint: "10.172.9.17" 
+    
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      aad_group_management: "649bf471-1d5e-4185-bbdf-08a0f0d9db40" # GSBTAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e8642959-054a-4644-9dd4-87244d4fa8cd" # GSBTAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "f80f13a5-4ce9-40c3-aa7a-82b28642c0ed" # GSBTAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "a6ac622b-a53c-4f54-98bd-57307c0cf201" # GSBTAB-Azure-lpdap-eu-Migration
+    patch_schedule_recur_every: "1Month Second Thursday"
+    patch_schedule_start_time: "19:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"
+
+  infrastructure_configuration:
+    configure_default_network_rules_storage: false
+    storage_account_extra_tags:
+      PolicyException0003: "Needed for SAP CDC Connection"
+
+acc:
+  domain_variables:
+    name: "customer_workflow"
+    version: "01"
+    abbreviation: "cnw"
+    entra_group_names:
+      use_catalog: "GSCPCA-ldap-Unity-cnw-acc-usecatalog-bronze"
+    virtual_machine_size: "Standard_D4_v4"
+    ip_addresses:
+      services_subnet: "10.165.48.0/27"
+      databricks_public_subnet: "10.165.169.128/26"
+      databricks_private_subnet: "10.165.169.192/26"
+      virtual_machine_1: "10.165.48.4"
+      virtual_machine_2: "10.165.48.5"
+      virtual_machine_3: "10.165.48.12"
+      virtual_machine_4: "10.165.48.13"
+      data_factory_private_endpoint: "10.165.48.6"
+      data_factory_02_private_endpoint: "10.165.48.14"
+      databricks_private_endpoint: "10.165.48.7"
+      storage_dfs_private_endpoint: "10.165.48.8"
+      storage_blob_private_endpoint: "10.165.48.9"
+      storage_table_private_endpoint: "10.165.48.15"
+      key_vault_infra_private_endpoint: "10.165.48.10"
+      key_vault_sources_private_endpoint: "10.165.48.11"      
+      interface_storage_dfs_private_endpoint: "10.165.48.16"
+      interface_storage_blob_private_endpoint: "10.165.48.17"
+    
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb-acc: "8718671f-8e8c-44f7-b749-3a1d7f22f463"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      aad_group_management: "875cb768-d336-45a2-ac58-d4f930e98ba4" # GSBAAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "a3dccd45-646b-426e-913d-a99cf072485a" # GSBAAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "c9eec3a0-2bee-458c-a4ae-69dd31a3e835" # GSBAAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "fec3a067-3670-4e4e-9c99-3f0c9571a343" # GSBAAB-Azure-lpdap-eu-Migration
+    patch_schedule_recur_every: "1Month Third Saturday"
+    patch_schedule_start_time: "10:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"
+    
+  infrastructure_configuration:
+    configure_default_network_rules_storage: false
+    storage_account_extra_tags:
+      PolicyException0003: "Needed for SAP CDC Connection"
+
+prd:
+  domain_variables:
+    name: "customer_workflow"
+    version: "01"
+    abbreviation: "cnw"
+    entra_group_names:
+      use_catalog: "GSCPCA-ldap-Unity-cnw-prd-usecatalog-bronze"
+    virtual_machine_size: "Standard_D4_v4"
+    ip_addresses:
+      services_subnet: "10.171.1.0/27"
+      databricks_public_subnet: "10.165.173.128/26"
+      databricks_private_subnet: "10.165.173.192/26"
+      virtual_machine_1: "10.171.1.4"
+      virtual_machine_2: "10.171.1.5"
+      virtual_machine_3: "10.171.1.12"
+      virtual_machine_4: "10.171.1.13"
+      data_factory_private_endpoint: "10.171.1.6" 
+      data_factory_02_private_endpoint: "10.171.1.14"     
+      databricks_private_endpoint: "10.171.1.7"
+      storage_dfs_private_endpoint: "10.171.1.8"
+      storage_blob_private_endpoint: "10.171.1.9"
+      storage_table_private_endpoint: "10.171.1.15"      
+      key_vault_infra_private_endpoint: "10.171.1.10"
+      key_vault_sources_private_endpoint: "10.171.1.11"  
+      interface_storage_dfs_private_endpoint: "10.171.1.16"
+      interface_storage_blob_private_endpoint: "10.171.1.17"
+    
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb-prd: "dfd1bbb4-3a0d-4c45-9f8c-30e83d728c73"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      aad_group_management: "a912b351-5537-4edf-8c7f-1e95f24c65af" # GSBPAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "9c197d65-7b5b-4dae-8093-d35ecb7aaa41" # GSBPAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "07908e98-def5-4ab1-a5c9-2a0902303d06" # GSBPAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "fadeec85-b07f-4473-a9c1-e399c485ec75" # GSBPAB-Azure-lpdap-eu-Migration
+    patch_schedule_recur_every: "1Month Fourth Saturday"
+    patch_schedule_start_time: "10:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"

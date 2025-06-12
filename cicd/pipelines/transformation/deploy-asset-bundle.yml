@@ -1,0 +1,88 @@
+parameters:
+  - name: post_deploy_job
+    type: string
+    default: " "
+  
+  - name: environment
+    type: string
+    values:
+    - dev
+    - tst
+    - acc+prd
+    default: "acc+prd"
+  
+  - name: data_domain
+    type: string
+
+stages:
+  - template: templates/stage.deploy.yml@cicd
+    parameters:
+      environment: dev
+      data_domain: ${{ parameters.data_domain }}
+      post_deploy_job: ${{ parameters.post_deploy_job }}
+      condition: and(succeeded(), eq('${{ parameters.environment }}', 'dev'))
+      dependsOn: []
+  
+  - template: templates/stage.deploy.yml@cicd
+    parameters:
+      environment: tst
+      data_domain: ${{ parameters.data_domain }}
+      post_deploy_job: ${{ parameters.post_deploy_job }}
+      condition: and(succeeded(), eq('${{ parameters.environment }}', 'tst'))
+      dependsOn: []
+
+  - template: templates/stage.deploy.yml@cicd
+    parameters:
+      environment: acc
+      data_domain: ${{ parameters.data_domain }}
+      post_deploy_job: ${{ parameters.post_deploy_job }}
+      condition: and(succeeded(), eq('${{ parameters.environment }}', 'acc+prd'))
+      dependsOn: []
+
+  - template: templates/stage.deploy.yml@cicd
+    parameters:
+      environment: prd
+      data_domain: ${{ parameters.data_domain }}
+      post_deploy_job: ${{ parameters.post_deploy_job }}
+      condition: and(succeeded(), eq('${{ parameters.environment }}', 'acc+prd'))
+      dependsOn: [ "deploy_${{ parameters.data_domain }}_to_acc" ]
+
+  - stage: "Deploy_IAM_to_dev"
+    displayName: Deploy IAM permissions for Databricks to dev
+    dependsOn: ["deploy_${{ parameters.data_domain }}_to_dev"]
+    jobs:
+    - template: cicd/job.iam-databricks-jobs.yml@iam
+      parameters:
+        azureserviceconnection: "lpdap-iam-dev"
+        env: dev
+        domain: ${{ parameters.data_domain }}
+
+  - stage: "Deploy_IAM_to_tst"
+    displayName: Deploy IAM permissions for Databricks to tst
+    dependsOn: ["deploy_${{ parameters.data_domain }}_to_tst"]
+    jobs:
+    - template: cicd/job.iam-databricks-jobs.yml@iam
+      parameters:
+        azureserviceconnection: "lpdap-iam-tst"
+        env: tst
+        domain: ${{ parameters.data_domain }}
+
+  - stage: "Deploy_IAM_to_acc"
+    displayName: Deploy IAM permissions for Databricks to acc
+    dependsOn: ["deploy_${{ parameters.data_domain }}_to_acc"]
+    jobs:
+    - template: cicd/job.iam-databricks-jobs.yml@iam
+      parameters:
+        azureserviceconnection: "lpdap-iam-acc"
+        env: acc
+        domain: ${{ parameters.data_domain }}
+
+  - stage: "Deploy_IAM_to_prd"
+    displayName: Deploy IAM permissions for Databricks to prd
+    dependsOn: ["deploy_${{ parameters.data_domain }}_to_prd"]
+    jobs:
+    - template: cicd/job.iam-databricks-jobs.yml@iam
+      parameters:
+        azureserviceconnection: "lpdap-iam-prd"
+        env: prd
+        domain: ${{ parameters.data_domain }}

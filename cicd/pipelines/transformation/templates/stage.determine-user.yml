@@ -1,0 +1,47 @@
+parameters:
+  - name: corporate_key
+    type: string
+    default: current_user
+
+stages:
+- stage: determine_user_stage
+  displayName: Determine CPA user
+  jobs:
+  - job: determine_user_job
+    steps:
+      - checkout: cicd
+        path: cicd
+
+      - task: Bash@3
+        displayName: Find CPA key to use for deployment
+        name: find_cpa_key
+        inputs:
+          targetType: inline
+          script: |
+            echo "##[group]Echo variables to use"
+            echo "$(Build.RequestedForId)"
+            echo "$(Build.RequestedFor)"
+            echo "$(Build.RequestedForEmail)"
+            echo "${{ parameters.corporate_key }}"
+            echo "##[endgroup]"
+
+            echo "##[group]Finding correct CPA key"
+            if [[ "${{ parameters.corporate_key }}" != "current_user" ]]; then
+              corp_key="${{ parameters.corporate_key }}"
+            else
+              email="$(Build.RequestedForEmail)"
+              corp_key=$(echo "$email" | awk -F'@' '{print $1}')
+            fi
+
+            # Ensure lowercase
+            cpa_key="$(echo "$corp_key" | tr '[:upper:]' '[:lower:]')"
+
+            # Ensure the string starts with cpa if the user is logged in with their corp key
+            if [[ $cpa_key != cpa* ]]; then
+              cpa_key="cpa${cpa_key}"
+            fi
+
+            echo "Found corporate key $corp_key, so CPA key is $cpa_key"
+            echo "##[endgroup]"
+
+            echo "##vso[task.setvariable variable=cpa_key;isOutput=true]$cpa_key"

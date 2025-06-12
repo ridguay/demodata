@@ -1,0 +1,61 @@
+
+
+##########
+# This template either downloads or builds the domain artifact and stores it in a subdirectory of the specified root directory.
+#
+# Steps this pipeline takes:
+#   1. If build_steps are provided, it will execute these steps
+#   2. If not, it will download the artifact with the given name and version from Artifactory.
+#   3. It will store the downloaded or built artifact in the directory $(Build.StagingDirectory)/<artifact_name>
+##########
+
+
+parameters:
+# The name of the Artifactory repository
+- name: name
+  type: string
+# The version of the artifact to download
+- name: version
+  type: string
+# The location the downloaded artifact should be extracted to
+- name: target_directory
+  type: string
+# If not the artifact should be pulled, but one should be build instead, these steps should contian the steps needed to build the artifact
+- name: build_steps
+  type: stepList
+  default: []
+# User to access Artifactory
+- name: artifactory_user
+  type: string
+# Password to access Artifactory
+- name: artifactory_password
+  type: string
+
+steps:
+# If there are no build steps provided, download the artifact from Artifactory
+- ${{ if eq(length(parameters.build_steps), 0) }}:
+  - task: CmdLine@2
+    displayName: "Cleanup previous artifacts"
+    inputs:
+      script: |
+        # Make sure the artifact directories are empty
+        echo "##[command]rm -rf ${BUILD_STAGINGDIRECTORY}/${{ parameters.name }}"
+        rm -rf ${BUILD_STAGINGDIRECTORY}/${{ parameters.name }}
+
+  - task: CmdLine@2
+    displayName: Download artifact - ${{ parameters.name }}
+    inputs:
+      script: |
+        cd ${BUILD_STAGINGDIRECTORY}
+        echo "url: https://artifactory.insim.biz/artifactory/${{ parameters.name }}/${{ parameters.version }}.zip"
+        echo "##[command]curl -u${{ parameters.artifactory_user }}:${{ parameters.artifactory_password }} -o \"${{ parameters.name }}.zip\" \"https://artifactory.insim.biz/artifactory/${{ parameters.name }}/${{ parameters.version }}.zip\""
+        curl -v -u${{ parameters.artifactory_user }}:${{ parameters.artifactory_password }} -o "${{ parameters.name }}.zip" "https://artifactory.insim.biz/artifactory/${{ parameters.name }}/${{ parameters.version }}.zip"
+        
+        echo "##[command]unzip -d ${{ parameters.target_directory }} ${{ parameters.name }}.zip"
+        unzip -d ${{ parameters.target_directory }} ${{ parameters.name }}.zip
+
+# If there are build steps provided, execute them instead of downloading from Artifactory
+- ${{ else }}:
+  - ${{ each step in parameters.build_steps }}:
+    - ${{ each pair in step }}:
+        ${{ pair.key }}: ${{ pair.value }}

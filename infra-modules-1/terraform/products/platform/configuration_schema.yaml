@@ -1,0 +1,16 @@
+# Read every key, except for the keys starting with an underscore
+# Then all keys that do not start with an underscore are considered to be part of the schema
+# All keys starting with an underscore are considered 'documentation', and not part of the schema
+
+env_variables:
+  subscription_id:
+    _type: "string"
+    _description: "ID of the subscription to deploy to."
+  iam_enterprise_object_id:
+    _type: "string"
+    _description: "Object ID Enterprise Application."
+  tags:
+    _type: "map"
+    _description: "Tags all resources will get. Should be key-value pairs."
+
+

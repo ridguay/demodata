@@ -1,0 +1,43 @@
+parameters:
+  - name: environment
+    values:
+    - dev
+    - tst
+    - acc+prd
+  - name: version
+
+variables:
+- template: variables/general.yml@extraction
+
+stages:
+  - template: templates/stage.deploy.yml
+    parameters:
+      environment: dev
+      artifactoryRepoUrl: ${{ variables.artifactoryRepoUrl }}
+      version: ${{ parameters.version }}
+      condition: and(succeeded(), eq('${{ parameters.environment }}', 'dev'))
+      dependsOn: []
+
+  - template: templates/stage.deploy.yml
+    parameters:
+      environment: tst
+      artifactoryRepoUrl: ${{ variables.artifactoryRepoUrl }}
+      version: ${{ parameters.version }}
+      condition: and(succeeded(), eq('${{ parameters.environment }}', 'tst'))
+      dependsOn: []
+
+  - template: templates/stage.deploy.yml
+    parameters:
+      environment: acc
+      artifactoryRepoUrl: ${{ variables.artifactoryRepoUrl }}
+      version: ${{ parameters.version }}
+      condition: and(succeeded(), eq('${{ parameters.environment }}', 'acc+prd'))
+      dependsOn: []
+
+  - template: templates/stage.deploy.yml
+    parameters:
+      environment: prd
+      artifactoryRepoUrl: ${{ variables.artifactoryRepoUrl }}
+      version: ${{ parameters.version }}
+      condition: and(succeeded(), eq('${{ parameters.environment }}', 'acc+prd'))
+      dependsOn: [ "deploy_acc" ]

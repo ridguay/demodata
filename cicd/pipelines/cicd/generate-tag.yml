@@ -1,0 +1,17 @@
+# generate-tag pipeline for the cicd repo
+name: generate-tag-cicd
+
+trigger:
+  branches:
+    include:
+      - main
+
+resources:
+  repositories:
+  - repository: cicd
+    type: git
+    name: LPDAP_Azure/cicd
+    ref: main
+
+extends:
+  template: semantic_release/generate-tag.yml@cicd

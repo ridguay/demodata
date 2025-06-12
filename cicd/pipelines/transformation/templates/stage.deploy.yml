@@ -1,0 +1,118 @@
+parameters:
+# Environment to deploy
+- name: environment
+  type: string
+  values:
+  - sbx
+  - pdv
+  - dev
+  - tst
+  - acc
+  - prd
+
+# The data domain to deploy ("cnw", "ind", "pns", "bdt", "glm")
+- name: data_domain
+  type: string
+  default: ""
+
+- name: post_deploy_job
+  type: string
+  default: ""
+
+- name: dependsOn
+  type: object
+  default: []
+
+- name: git_ref
+  type: string
+  default: ""
+
+- name: condition
+  type: string
+  default: succeeded()
+
+stages:
+- stage: "deploy_${{ parameters.data_domain }}_to_${{ parameters.environment }}"
+  displayName: "Deploy ${{ parameters.git_ref }} to ${{ parameters.environment }}"
+  condition: ${{ parameters.condition }}
+  dependsOn: ${{ parameters.dependsOn }}
+  # This gets set from the stage defined in stage.determine-user.yml; if not set, the variable is unused
+  variables:
+    target_user: $[stageDependencies.determine_user_stage.determine_user_job.outputs['find_cpa_key.cpa_key'] ]
+  jobs:
+  - deployment: deploy_databricks_asset_bundle
+    displayName: Deploy Databricks Asset Bundles
+    pool: LPDAP-Pool-${{ parameters.environment }}
+    environment: databricks-${{ parameters.environment }}
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: cicd
+            path: cicd
+          - checkout: transformation
+            path: transformation
+            submodules: recursive
+
+          - task: Bash@3
+            displayName: Echo input parameters
+            name: echo_input_params
+            inputs:
+              targetType: 'inline'
+              script: |
+                echo "##[group]Input parameters:"
+                echo "##[debug]environment: ${{ parameters.environment }}"
+                echo "##[debug]data_domain: ${{ parameters.data_domain }}"
+                echo "##[debug]post_deploy_job: ${{parameters.post_deploy_job }}"
+                echo "##[debug]target_user: $(target_user)"
+                echo "##[debug]Git ref: ${{ parameters.git_ref }}"
+                echo "##[endgroup]"
+
+          - task: AzureCLI@2
+            displayName: "Get Databricks Asset Bundle deployment configuration"
+            name: asset_bundle_deployment_config
+            env:
+              key_vault_name: "kv-lpdapv001-meta-envs"
+              environment: ${{ parameters.environment }}
+              domain: ${{ parameters.data_domain }}
+            inputs:
+              azureSubscription: 'sp-lpdap-meta'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az config set core.only_show_errors=yes
+
+                host_key="${environment}-${domain}-databricks-workspace-host"
+                echo "##[command]az keyvault secret show --name "$host_key" --vault-name \"$key_vault_name\" --query \"value\" -o tsv"
+                host=$(az keyvault secret show --name "$host_key" --vault-name "$key_vault_name" --query "value" -o tsv)
+
+                if [ -z "$host" ]; then  
+                    echo "##vso[task.logissue type=error]No matching secret found for secret $host_key."  
+                    exit 1
+                fi
+
+                pat_key="${environment}-${domain}-databricks-workspace-pat"
+                echo "##[command]az keyvault secret show --name "$pat_key" --vault-name \"$key_vault_name\" --query \"value\" -o tsv"
+                pat=$(az keyvault secret show --name "$pat_key" --vault-name "$key_vault_name" --query "value" -o tsv)
+
+                if [ -z "$pat" ]; then  
+                    echo "##vso[task.logissue type=error]No matching secret found for secret $pat_key."  
+                    exit 1
+                fi
+
+                echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=databricks_workspace_host]$host"
+                echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=true;variable=databricks_workspace_pat]$pat"
+
+          - task: Bash@3
+            displayName: "Deploy Databricks Asset Bundles"
+            name: deploy_asset_bundles
+            env:
+              ENVIRONMENT: ${{ parameters.environment }}
+              DATABRICKS_HOST: $(asset_bundle_deployment_config.databricks_workspace_host)
+              DATABRICKS_TOKEN: $(asset_bundle_deployment_config.databricks_workspace_pat)
+            inputs:
+              workingDirectory: '$(Pipeline.Workspace)/transformation'
+              filePath: "$(Pipeline.Workspace)/cicd/pipelines/transformation/scripts/databricks_asset_bundles.sh" 
+              arguments: '"${ENVIRONMENT}" "$(target_user)" "${{ parameters.post_deploy_job }}"'
+              failOnStderr: false

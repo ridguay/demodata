@@ -1,0 +1,83 @@
+client_id : "3e76b4bb-79aa-479b-98d4-1d053cf883e7"
+subscription_id : "8e5fbe4b-a78e-4e74-b38c-15f7fbe4cf9b"
+subscription_app_id : "79772d63-083c-4377-a488-d13b0e58f1ec"
+tenant_id : "fed95e69-8d73-43fe-affb-a7d85ede36fb"
+environment:
+  virtual_network_data:
+    resource_group_name: "AzureVnet"
+    name: "NNANPSpoke-LPDAP-meta"
+  ip_addresses:
+    tfstate_subnet: "10.162.120.16/28"
+    tfstate_blob_private_endpoint: "10.162.120.20"
+    utils_blob_private_endpoint: "10.162.120.21"
+    services_subnet: "10.162.120.144/28"
+    databricks_public_subnet: "10.162.121.0/26"
+    databricks_private_subnet: "10.162.121.64/26"
+    databricks_private_endpoint: "10.162.120.148"
+    logging_dfs_private_endpoint: "10.162.120.149"
+    logging_blob_private_endpoint: "10.162.120.150"
+    iam_key_vault_private_endpoint: "10.162.120.151"
+    envs_key_vault_private_endpoint: "10.162.120.22"
+  tags:
+    Now_ApplicationService: "AS LPDAP Azure - DEV"
+    Now_Environment: "Development"
+    Now_CostCenter: "V0015432"
+    Now_ManagedByGroup: "NL CFG LP/CIO"
+    Now_SupportGroup: "NL LP/CIO/LPDAP Azure"
+    Now_Location: "Netherlands"
+    terraform: true
+  utils_storage_tags:
+    PolicyException0003: Storage account needs to be accessible from public internet for application gallery, for more info https://learn.microsoft.com/en-us/azure/virtual-machines/vm-applications?tabs=ubuntu#limitations
+    PolicyException0004: Storage account needs to be accessible from public internet for application gallery, for more info https://learn.microsoft.com/en-us/azure/virtual-machines/vm-applications?tabs=ubuntu#limitations
+
+object_ids:
+  subscriptions:
+    dev: "bc1751f6-168a-4c80-bba0-3278b109fae9" # DEV
+    tst: "8cc30c99-b8e1-45e4-97c6-2c87c03a2ac6" # TST
+    acc: "a5007324-91eb-4161-bacf-c0538c6e2f5f" # ACC
+    prd: "a9c6a5ac-bb6f-4768-b9b9-15a5a6f72187" # PRD
+    meta: "79772d63-083c-4377-a488-d13b0e58f1ec"
+    sbx: "cc858fdb-93e3-4d2c-ba06-cedaba8a33f0"
+    pdv: "70dfad15-174a-4046-966e-9820218d7943"
+    iamtest: "4ad26af4-0b48-48af-b0e7-be4cf84d7a23"
+    adf-as-a-service-dev: "14e9f20a-1ab5-4c7f-a75e-0f7eb26a8c9c"
+    adf-as-a-service-tst: "7286f24e-ae8c-4f1d-bea9-d051c6828455"
+    adf-as-a-service-acc: "f8dc1efe-7bb2-4931-ab13-04491945b6d6"
+    adf-as-a-service-prd: "cf49780f-5b1f-488a-a8ef-81df7dc9a2f8"
+  devops_engineers:
+    henri: "41af089a-38fd-4353-873a-ec1381a136f6" # Henri ry65gw
+    menno: "2e98a991-0b6f-41d7-b352-fd419231c043" # Menno ql80av
+    michel: "935d196d-0999-4372-91b1-331f3de6cbaa" # Michel sk43oh (CPA)
+    maayan: "1f498d9e-90ee-4266-b879-269d5e987589" # Maayan jh10ll (CPA) 
+    delano: "f7f5b59e-d9f6-48e5-8bdf-ce9c26b2aad1" # Délano vm23es (CPA)
+    Job: "85bb7a48-8c0d-4b35-9bf0-e89126731651" # Job uz02le (CPA)
+    milan: "62475e42-4df8-4731-b641-22a15e71f186" # Milan
+  app_ids:
+    databricks: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+    AzureSubscription-LPDAP-meta: "79772d63-083c-4377-a488-d13b0e58f1ec"
+    LPDAP-IAM-EA: "f9006502-583c-41db-935d-ada058d2aaa2"
+
+allowed_ips:
+  - "8.25.203.0/24"
+  - "13.69.221.12/32"
+  - "27.251.211.238/32"
+  - "64.74.126.64/26"
+  - "70.39.159.0/24"
+  - "72.52.96.0/26"
+  - "89.167.131.0/24"
+  - "104.129.192.0/20"
+  - "136.226.0.0/16"
+  - "137.83.128.0/18"
+  - "147.161.128.0/17"
+  - "165.225.0.0/17"
+  - "165.225.192.0/18"
+  - "185.46.212.0/22"
+  - "199.168.148.0/22"
+  - "213.152.228.0/24"
+  - "216.218.133.192/26"
+  - "216.52.207.64/26"
+  - "156.114.2.28/32"
+  - "40.74.30.81/32" # <- Databricks public Ip    
+
+
+

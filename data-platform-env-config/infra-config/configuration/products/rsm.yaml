@@ -1,0 +1,211 @@
+user_object_ids:
+  data_engineers:
+    - meint
+    - michael
+infrastructure_configuration:
+  instance_type: mall
+  deploy_azure_hosted_integration_runtime: false
+  uc_enabled: true
+  legacy_clusters_enabled: false
+  # The following Databricks related entries allow for defining cluster configuration and pypi packages. 
+  # There are default values for all parameters (see modules/functional/variables.tf -> databricks_functional_vars), so you only have to specify default values that you want to overwrite
+  # This can be done across all environments (here), or for a specific environment (add this to env-specific infrastructure-configuration below)
+  databricks_main_clusters:
+    spark_version_id: "15.4.x-scala2.12"
+  databricks_user_specific_clusters: {}
+  databricks_pypi_packages: []
+  storage_account:
+    shared_access_key_enabled: false
+  deploy_interface_storage_account: false
+
+pdv:
+  domain_variables:
+    name: "rsm"
+    version: "01"
+    abbreviation: "rsm"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.163.48.0/27"
+      databricks_public_subnet: "10.163.49.0/26"
+      databricks_private_subnet: "10.163.49.64/26"
+      virtual_machine_1: "10.163.48.4"
+      virtual_machine_2: "10.163.48.5"
+      virtual_machine_3: "10.163.48.12"
+      virtual_machine_4: "10.163.48.13"
+      data_factory_private_endpoint: "10.163.48.6"
+      data_factory_02_private_endpoint: "10.163.48.14"
+      databricks_private_endpoint: "10.163.48.7"
+      storage_dfs_private_endpoint: "10.163.48.8"
+      storage_blob_private_endpoint: "10.163.48.9"
+      storage_table_private_endpoint: "10.163.48.15"
+      key_vault_infra_private_endpoint: "10.163.48.10"
+      key_vault_sources_private_endpoint: "10.163.48.11"
+      interface_storage_dfs_private_endpoint: "10.163.48.16"
+      interface_storage_blob_private_endpoint: "10.163.48.17"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Second Wednesday"
+    patch_schedule_start_time: "19:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"
+
+  infrastructure_configuration:
+    env_type: "tst"
+    uc_enabled: false
+
+dev:
+  domain_variables:
+    name: "rsm"
+    version: "01"
+    abbreviation: "rsm"
+    entra_group_names:
+      use_catalog: "GSCDCA-rsm-Unity-dev-usecatalog-gold"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.165.160.64/27"
+      databricks_public_subnet: "10.165.162.128/26"
+      databricks_private_subnet: "10.165.162.192/26"
+      virtual_machine_1: "10.165.160.68"
+      virtual_machine_2: "10.165.160.69"
+      virtual_machine_3: "10.165.160.76"
+      virtual_machine_4: "10.165.160.77"
+      data_factory_private_endpoint: "10.165.160.70"
+      data_factory_02_private_endpoint: "10.165.160.78"
+      databricks_private_endpoint: "10.165.160.71"
+      storage_dfs_private_endpoint: "10.165.160.72"
+      storage_blob_private_endpoint: "10.165.160.73"
+      storage_table_private_endpoint: "10.165.160.79"
+      key_vault_infra_private_endpoint: "10.165.160.74"
+      key_vault_sources_private_endpoint: "10.165.160.75"
+      interface_storage_dfs_private_endpoint: "10.165.160.80"
+      interface_storage_blob_private_endpoint: "10.165.160.81"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Second Wednesday"
+    patch_schedule_start_time: "19:00"
+    patch_schedule_start_date: "2021-03-02"
+    patch_schedule_end_time: "03:00"
+
+tst:
+  domain_variables:
+    name: "rsm"
+    version: "01"
+    abbreviation: "rsm"
+    entra_group_names:
+      use_catalog: "GSCTCA-rsm-Unity-tst-usecatalog-gold"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.165.164.64/27"
+      databricks_public_subnet: "10.165.166.128/26"
+      databricks_private_subnet: "10.165.166.192/26"
+      virtual_machine_1: "10.165.164.68"
+      virtual_machine_2: "10.165.164.69"
+      virtual_machine_3: "10.165.164.76"
+      virtual_machine_4: "10.165.164.77"
+      data_factory_private_endpoint: "10.165.164.70"
+      data_factory_02_private_endpoint: "10.165.164.78"
+      databricks_private_endpoint: "10.165.164.71"
+      storage_dfs_private_endpoint: "10.165.164.72"
+      storage_blob_private_endpoint: "10.165.164.73"
+      storage_table_private_endpoint: "10.165.164.79"
+      key_vault_infra_private_endpoint: "10.165.164.74"
+      key_vault_sources_private_endpoint: "10.165.164.75"
+      interface_storage_dfs_private_endpoint: "10.165.164.80"
+      interface_storage_blob_private_endpoint: "10.165.164.81"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Second Thursday"
+    patch_schedule_start_time: "19:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"
+
+acc:
+  domain_variables:
+    name: "rsm"
+    version: "01"
+    abbreviation: "rsm"
+    entra_group_names:
+      use_catalog: "GSCACA-rsm-Unity-acc-usecatalog-gold"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.165.168.64/27"
+      databricks_public_subnet: "10.165.170.128/26"
+      databricks_private_subnet: "10.165.170.192/26"
+      virtual_machine_1: "10.165.168.68"
+      virtual_machine_2: "10.165.168.69"
+      virtual_machine_3: "10.165.168.76"
+      virtual_machine_4: "10.165.168.77"
+      data_factory_private_endpoint: "10.165.168.70"
+      data_factory_02_private_endpoint: "10.165.168.78"
+      databricks_private_endpoint: "10.165.168.71"
+      storage_dfs_private_endpoint: "10.165.168.72"
+      storage_blob_private_endpoint: "10.165.168.73"
+      storage_table_private_endpoint: "10.165.168.79"
+      key_vault_infra_private_endpoint: "10.165.168.74"
+      key_vault_sources_private_endpoint: "10.165.168.75"
+      interface_storage_dfs_private_endpoint: "10.165.168.80"
+      interface_storage_blob_private_endpoint: "10.165.168.81"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb-acc: "8718671f-8e8c-44f7-b749-3a1d7f22f463"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Third Saturday"
+    patch_schedule_start_time: "10:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"
+
+prd:
+  domain_variables:
+    name: "rsm"
+    version: "01"
+    abbreviation: "rsm"
+    entra_group_names:
+      use_catalog: "GSCPCA-rsm-Unity-prd-usecatalog-gold"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.165.172.64/27"
+      databricks_public_subnet: "10.165.174.128/26"
+      databricks_private_subnet: "10.165.174.192/26"
+      virtual_machine_1: "10.165.172.68"
+      virtual_machine_2: "10.165.172.69"
+      virtual_machine_3: "10.165.172.76"
+      virtual_machine_4: "10.165.172.77"
+      data_factory_private_endpoint: "10.165.172.70"
+      data_factory_02_private_endpoint: "10.165.172.78"
+      databricks_private_endpoint: "10.165.172.71"
+      storage_dfs_private_endpoint: "10.165.172.72"
+      storage_blob_private_endpoint: "10.165.172.73"
+      storage_table_private_endpoint: "10.165.172.79"
+      key_vault_infra_private_endpoint: "10.165.172.74"
+      key_vault_sources_private_endpoint: "10.165.172.75"
+      interface_storage_dfs_private_endpoint: "10.165.172.80"
+      interface_storage_blob_private_endpoint: "10.165.172.81"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb-prd: "dfd1bbb4-3a0d-4c45-9f8c-30e83d728c73"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Fourth Saturday"
+    patch_schedule_start_time: "10:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"

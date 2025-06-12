@@ -1,0 +1,656 @@
+parameters:
+# Action for Terraform to perform
+- name: action
+  type: string
+  values:
+  - apply
+  - destroy
+
+# Product to deploy
+- name: product
+  type: string
+  values:
+  - domain
+  - platform
+
+# Where can we find PLATFORM_CONFIGURATION_FILE
+- name: platform_configuration
+  type: string
+  default: ""
+
+# Where can we find ENVIRONMENT_CONFIGURATION
+- name: environment_configuration
+  type: string
+  default: ""
+
+# Where can we find PRODUCT_CONFIGURATION (i.e., customer_workflow.yaml, business.yaml, etc.)
+- name: product_configuration
+  type: string
+  default: ""
+
+# Where can we find PRODUCT_CONFIGURATION_DIR 
+- name: product_configuration_dir
+  type: string
+  default: ""
+
+# Environment to deploy
+- name: environment
+  type: string
+  values:
+  - dev
+  - tst
+  - acc
+  - prd
+  - sbx
+  - pdv
+
+# Steps to build the domain artifact
+# When not empty: the artifact won't be downloaded from Artifactory
+- name: get_domain_artifact_steps
+  type: stepList
+  default: []
+
+# Steps to build the infra-modules artifact
+# When not empty: the artifact won't be downloaded from Artifactory
+- name: get_infra_modules_artifact_steps
+  type: stepList
+  default: []
+
+# If a specific data source is deployed, its name should be passed through this parameter
+- name: data_source_name
+  type: string
+  default: ""
+
+# If the package should be deployed to a specific cluster, the cluster name should be passed through this parameter
+- name: databricks_cluster_name
+  type: string
+  default: ""
+
+# Path to te environment layer to run the terragrunt command from
+# For example: When `environment_layer_path=base`, then the terragrunt command will be run from that directory
+- name: environment_layer_path
+  type: string
+  default: ""
+
+# Modules to include in the deployment relative to the environment_layer_path
+# Leave empty to include all modules, multiple modules are space separated
+- name: terragrunt_include_dir
+  type: string
+  default: ""
+
+# The data domain to deploy ("platform", "customer_workflow", "individual", "pensions", "business", "glam", "rsm", "reinsurance")
+- name: data_domain
+  type: string
+  default: ""
+
+# For non-customer instances in predev, we want to be able to deploy an artifact of one of the customer domains
+- name: artifact_domain
+  type: string
+  default: " "
+
+# The path to directory containing the databricks asset bundle files
+- name: databricks_bundle_root_dir
+  type: string
+  default: "src/ingestion/sources/*/slo"
+
+# If this is set to false, we will allow resources to be destroyed in the base layer. Otherwise, the pipeline will fail if the plan contains destroys.
+- name: prevent_destroys_in_base_layer
+  type: boolean
+  default: true
+
+# When false, the Databricks Asset Bundle deployment is skipped
+- name: deploy_asset_bundle
+  type: boolean
+  default: true
+
+# When true, the terragrunt command is not run
+- name: dry_run
+  type: boolean
+  default: false
+
+jobs:
+  # The name of the job contains the action and if provided, the data_source_name or databricks_cluster_name
+  - deployment: ${{ parameters.action }}_${{ coalesce(parameters.data_source_name, parameters.databricks_cluster_name, replace(parameters.environment, '-', '_')) }}
+    displayName: "${{ parameters.action }}-${{ replace(parameters.environment, '-', '_') }}"
+
+    # Make sure the deployment is run on a specific build agent, to prevent parallelization
+    pool:
+      name: 'LPDAP-Pool-${{ parameters.environment }}' 
+    environment: '${{ parameters.data_domain }}-${{ parameters.environment }}' 
+    
+    variables: 
+    - name: domains_with_artifact
+      value: customer_workflow pensions individual
+
+    strategy:
+     runOnce:
+      deploy:
+          steps:
+            - checkout: data-platform-env-config
+              path: data-platform-env-config
+          # Retrieve secrets from meta subscription
+            - task: AzureKeyVault@2
+              inputs:
+                azureSubscription: 'sp-lpdap-meta'
+                KeyVaultName: 'kv-lpdapv001-meta-envs'
+                SecretsFilter: '*'
+                RunAsPreJob: true
+
+            # Extract the environment configuration from the yaml file
+            - task: Bash@3
+              displayName: "Read environment config file"
+              name: Environment
+              inputs:
+                targetType: 'inline'
+                script: |
+                  # Needed to be able to execute the script that reads the yaml file
+                  chmod +x ${PIPELINE_WORKSPACE}/data-platform-env-config/cicd/utils/parse_yaml.sh
+
+                  # Save all values from the config file into environment variables
+                  echo "##[command]eval $(bash ${PIPELINE_WORKSPACE}/data-platform-env-config/cicd/utils/parse_yaml.sh \"${PIPELINE_WORKSPACE}/data-platform-env-config/envs_domain_split/${{ parameters.environment }}.yaml\")"
+                  eval $(bash ${PIPELINE_WORKSPACE}/data-platform-env-config/cicd/utils/parse_yaml.sh "${PIPELINE_WORKSPACE}/data-platform-env-config/envs_domain_split/${{ parameters.environment }}.yaml")
+
+                  # Echo the values for clarity
+                  echo environment: ${{ parameters.environment }}
+                  echo action: ${{ parameters.action }}
+                  echo data_domain: ${{ parameters.data_domain }}
+                  echo artifact_domain: ${{ parameters.artifact_domain }}
+                  echo ""
+
+                  echo versions_infra_modules_artifact: $versions_infra_modules_artifact
+                  echo versions_${{ parameters.data_domain }}_artifact: $versions_${{ parameters.data_domain }}_artifact
+                  echo versions_${{ parameters.data_domain }}_environment_version: $versions_${{ parameters.data_domain }}_environment_version
+                  echo versions_${{ parameters.artifact_domain }}_artifact: $versions_${{ parameters.artifact_domain }}_artifact
+                  echo ""
+
+                  PLATFORM_CONFIGURATION=${{ parameters.platform_configuration }}
+                  PRODUCT_CONFIGURATION=${{ parameters.product_configuration }}
+                  PRODUCT_CONFIGURATION_DIR=${{ parameters.product_configuration_dir }}
+                  ENVIRONMENT_CONFIGURATION=${{ parameters.environment_configuration }}
+
+                  # expose parsed parameters to other jobs
+                  echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=PLATFORM_CONFIGURATION]$PLATFORM_CONFIGURATION"
+                  echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=ENVIRONMENT_CONFIGURATION]$ENVIRONMENT_CONFIGURATION"
+                  echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=PRODUCT_CONFIGURATION]$PRODUCT_CONFIGURATION"
+                  echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=PRODUCT_CONFIGURATION_DIR]$PRODUCT_CONFIGURATION_DIR"
+
+                  # Expose major and minor version to other jobs
+                  echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=ARTIFACT_MAJOR]$ARTIFACT_MAJOR"
+                  echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=ARTIFACT_MINOR]$ARTIFACT_MINOR"
+
+                  echo env_variables_TFSTATE_RESOURCE_GROUP_NAME: $env_variables_TFSTATE_RESOURCE_GROUP_NAME
+                  echo env_variables_TFSTATE_STORAGE_ACCOUNT_NAME: $env_variables_TFSTATE_STORAGE_ACCOUNT_NAME
+                  
+                  # Expose the values to the other jobs
+                  if [[ '${{ parameters.artifact_domain }}' == ' ' ]]; then
+                    # customer_workflow contains a '_', which is denoted as a '-' in artifactory
+                  echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=domain_artifact_name]lpdap-${{ replace(parameters.data_domain, '_', '-') }}-pipelines"
+                  echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=versions_domain_artifact]$versions_${{ parameters.data_domain }}_artifact"
+                  echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=versions_domain_environment_version]$versions_${{ parameters.data_domain }}_environment_version"                  
+                  else
+                    echo 'An artifact domain was specified. The artifact ${{ parameters.artifact_domain }} will be downloaded to deploy to ${{ parameters.data_domain }}.'
+                    # customer_workflow contains a '_', which is denoted as a '-' in artifactory
+                    echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=domain_artifact_name]lpdap-${{ replace(parameters.artifact_domain, '_', '-') }}-pipelines"
+                    echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=versions_domain_artifact]$versions_${{ parameters.artifact_domain }}_artifact"
+                    echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=versions_domain_environment_version]$versions_${{ parameters.artifact_domain }}_environment_version"
+                  fi
+
+                  echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=versions_infra_modules_artifact]$versions_infra_modules_artifact"
+                  
+                  echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=env_variables_TFSTATE_RESOURCE_GROUP_NAME]$env_variables_TFSTATE_RESOURCE_GROUP_NAME"
+                  echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=env_variables_TFSTATE_STORAGE_ACCOUNT_NAME]$env_variables_TFSTATE_STORAGE_ACCOUNT_NAME"
+
+            # Download (or build) for each microservice their artifact and store it in $(System.DefaultWorkingDirectory)/<microservice>
+            - ${{ if contains(format(' {0} ', variables.domains_with_artifact), format(' {0} ', parameters.data_domain)) }}:
+            # - ${{ if not(or(eq(parameters.data_domain, 'platform'), eq(parameters.data_domain, 'rsm'), eq(parameters.data_domain, 'business'), eq(parameters.data_domain, 'glam'), eq(parameters.data_domain, 'reinsurance' ) )) }}:
+              - template: template.get-domain-artifact.yml
+                parameters:
+                  name: $(Environment.domain_artifact_name)
+                  version: $(Environment.versions_domain_artifact)
+                  target_directory: domain_artifact
+                  artifactory_user: $(ARTIFACTORY-USER)
+                  artifactory_password: $(ARTIFACTORY-PASSWORD)
+                  build_steps: ${{ parameters.get_domain_artifact_steps }}
+
+            - template: template.get-domain-artifact.yml
+              parameters:
+                name: infra-modules
+                version: $(Environment.versions_infra_modules_artifact)
+                target_directory: infra-modules
+                artifactory_user: $(ARTIFACTORY-USER)
+                artifactory_password: $(ARTIFACTORY-PASSWORD)
+                build_steps: ${{ parameters.get_infra_modules_artifact_steps }}
+
+            # Perform a Terragrunt plan on the base layer to check if resources will be destroyed
+            - task: AzureCLI@2
+              displayName: Check for destroyed resources in base layer
+              continueOnError: ${{ not(parameters.prevent_destroys_in_base_layer) }}  # only warn, never actually fail the pipeline because of this
+              env:
+                # Set ARM environmental variables which are required to run Terraform commands
+                ARM_SUBSCRIPTION_ID: $(subscription_id_meta)
+                ARM_CLIENT_ID: $(client_id_meta)
+                ARM_CLIENT_SECRET: $(client-secret-meta)
+                ARM_TENANT_ID: $(tenant_id_meta)
+
+                VERSIONS_INFRA_MODULES_ARTIFACT: $(Environment.versions_infra_modules_artifact)
+
+                # Configuration for the product, domain and environment
+                PLATFORM_CONFIGURATION_FILE: $(Environment.PLATFORM_CONFIGURATION)
+                PRODUCT_CONFIGURATION_FILE: $(Environment.PRODUCT_CONFIGURATION)
+                PRODUCT_CONFIGURATION_DIR: $(Environment.PRODUCT_CONFIGURATION_DIR)
+                ENV_CONFIGURATION_FILE: $(Environment.ENVIRONMENT_CONFIGURATION)
+
+                # Needed to deploy to specific environment
+                CLIENT_SECRET: $(client-secret-${{ parameters.environment }})
+
+                # To save the tfstate file to the meta subscription
+                TFSTATE_RESOURCE_GROUP_NAME: $(Environment.env_variables_TFSTATE_RESOURCE_GROUP_NAME)
+                TFSTATE_STORAGE_ACCOUNT_NAME: $(Environment.env_variables_TFSTATE_STORAGE_ACCOUNT_NAME)
+
+                # Environment information
+                ENVIRONMENT_VERSION: $(Environment.versions_domain_environment_version)
+
+                # Set the ARTIFACT_DIR_PATH: this is only relevant for domain teams, but the env variable needs to exist for mall teams as well. 
+                # The content of the variable is not relevant for mall teams, just the fact that it exists.
+                # TODO: Remove 'business' as soon as there are artifacts for it
+                # ${{ if or(eq(parameters.data_domain, 'platform'), eq(parameters.data_domain, 'rsm'), eq(parameters.data_domain, 'business'), eq(parameters.data_domain, 'glam') ) }}:
+                ${{ if not(contains(format(' {0} ', variables.domains_with_artifact), format(' {0} ', parameters.data_domain))) }}:
+                  ${{ if not(eq(parameters.data_domain, 'platform')) }}:
+                    ARTIFACT_DIR_PATH: "notdefined"
+                ${{ else }}:
+                  ARTIFACT_DIR_PATH: "$(Build.StagingDirectory)/domain_artifact"
+
+                TERRAGRUNT_TERRAFORM_DIR: "$(Build.StagingDirectory)/infra-modules/terraform"
+
+                # Extra secrets
+                ARTIFACTORY-USER: $(ARTIFACTORY-USER)
+                ARTIFACTORY-PASSWORD: $(ARTIFACTORY-PASSWORD)
+
+                # Added two Env vars to be compatible with local deployments. You cannot set environment vars with '-' in them.
+                ARTIFACTORY_USER: $(ARTIFACTORY-USER)
+                ARTIFACTORY_PASSWORD: $(ARTIFACTORY-PASSWORD)
+
+              inputs:
+                azureSubscription: 'sp-lpdap-meta'
+                addSpnToEnvironment: true
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  echo "##[command]echo ${ARTIFACT_DIR_PATH}"
+                  echo ${ARTIFACT_DIR_PATH}
+
+                  # Clean cache folder
+                  echo "##[group]Clean Terragrunt cache"
+                  find . -type d -name ".terragrunt-cache" -prune -exec rm -rf {} \;
+                  echo "##[endgroup]"
+
+                  echo "##[group]Change to the correct path"
+                  echo "##[command]environment_path=\"${TERRAGRUNT_TERRAFORM_DIR}/products/${{ parameters.product }}/base\""
+                  environment_path="${TERRAGRUNT_TERRAFORM_DIR}/products/${{ parameters.product }}/base"
+
+                  # If the specified path does not exist, we're not deploying a product that has a base layer. 
+                  # We don't need to run the checks for this product.
+                  if [[ ! -d $environment_path ]]; then 
+                    echo "Directory $environment_path does not exist. No need to run validation."
+                    echo "##[endgroup]"
+                    exit 0
+                  fi
+
+                  # If we're not deploying the base layer or the whole product, we don't need to run the checks either.
+                  environment_layer_path=${{ parameters.environment_layer_path }}
+                  if [[ "$environment_layer_path" != "*base*" && "$environment_layer_path" != "." ]]; then
+                    echo "Not deploying the base layer. No need to run validation."
+                    echo "##[endgroup]"
+                    exit 0
+                  fi
+
+                  echo "##[command]cd ${environment_path}"
+                  cd ${environment_path}
+                  echo "##[endgroup]"
+
+                  echo "##[group]Run Terraform plan on base layer, store output in base.tfplan"
+                  echo "##[command]terragrunt run-all init -upgrade --terragrunt-non-interactive --terragrunt-include-module-prefix --terragrunt-source-update"
+                  terragrunt run-all init -upgrade --terragrunt-non-interactive --terragrunt-include-module-prefix --terragrunt-source-update
+
+                  echo "##[command]terragrunt plan --terragrunt-non-interactive --terragrunt-include-module-prefix --terragrunt-source-update -no-color > base.tfplan"
+                  terragrunt plan --terragrunt-non-interactive --terragrunt-include-module-prefix --terragrunt-source-update -no-color > base.tfplan
+                  echo "##[endgroup]"
+                  
+                  echo "##[group]Check for resources that will be destroyed in base and set exit code accordingly"
+                  exitcode=0
+                  if grep -qE '[1-9][0-9]* to destroy' base.tfplan; then
+                    echo "Resources will be destroyed in base, exiting for safety."
+
+                    echo "##[warning]Resources that will be replaced:"
+                    echo "##[command]grep -i 'must be replaced' base.tfplan"
+                    grep -i 'must be replaced' base.tfplan
+                    echo "[warning]Resources that will be destroyed:"
+                    echo "##[command]grep -i 'will be destroyed' base.tfplan"
+                    grep -i 'will be destroyed' base.tfplan
+
+                    echo "##[warning]Resources will be destroyed or replaced, exiting with failure code."
+                    echo "##[endgroup]"
+                    exitcode=1
+                  else
+                    echo "No resources will be destroyed in base, will continue normally."
+                    echo "##[endgroup]"
+                  fi
+
+                  echo "##[command]rm base.tfplan"
+                  rm base.tfplan
+                  exit $exitcode
+
+            # Perform the terragrunt command
+            - task: AzureCLI@2
+              displayName: Terragrunt
+              env:
+                # Set ARM environmental variables which are required to run Terraform commands
+                ARM_SUBSCRIPTION_ID: $(subscription_id_meta)
+                ARM_CLIENT_ID: $(client_id_meta)
+                ARM_CLIENT_SECRET: $(client-secret-meta)
+                ARM_TENANT_ID: $(tenant_id_meta)
+
+                VERSIONS_INFRA_MODULES_ARTIFACT: $(Environment.versions_infra_modules_artifact)
+
+                # Configuration for the product, domain and environment
+                PLATFORM_CONFIGURATION_FILE: $(Environment.PLATFORM_CONFIGURATION)
+                PRODUCT_CONFIGURATION_FILE: $(Environment.PRODUCT_CONFIGURATION)
+                PRODUCT_CONFIGURATION_DIR: $(Environment.PRODUCT_CONFIGURATION_DIR)
+                ENV_CONFIGURATION_FILE: $(Environment.ENVIRONMENT_CONFIGURATION)
+
+                # Needed to deploy to specific environment
+                CLIENT_SECRET: $(client-secret-${{ parameters.environment }})
+
+                # To save the tfstate file to the meta subscription
+                TFSTATE_RESOURCE_GROUP_NAME: $(Environment.env_variables_TFSTATE_RESOURCE_GROUP_NAME)
+                TFSTATE_STORAGE_ACCOUNT_NAME: $(Environment.env_variables_TFSTATE_STORAGE_ACCOUNT_NAME)
+
+                # Environment information
+                ENVIRONMENT_VERSION: $(Environment.versions_domain_environment_version)
+
+                # Set the ARTIFACT_DIR_PATH: this is only relevant for domain teams, but the env variable needs to exist for mall teams as well. 
+                # The content of the variable is not relevant for mall teams, just the fact that it exists.
+                # TODO: Remove business as soon as there are artifacts for it
+                # ${{ if or(eq(parameters.data_domain, 'platform'), eq(parameters.data_domain, 'rsm'), eq(parameters.data_domain, 'business'), eq(parameters.data_domain, 'glam') ) }}:
+                ${{ if not(contains(format(' {0} ', variables.domains_with_artifact), format(' {0} ', parameters.data_domain))) }}:
+                  ${{ if not(eq(parameters.data_domain, 'platform')) }}:
+                    ARTIFACT_DIR_PATH: "notdefined"
+                ${{ else }}:
+                  ARTIFACT_DIR_PATH: "$(Build.StagingDirectory)/domain_artifact"
+
+                TERRAGRUNT_TERRAFORM_DIR: "$(Build.StagingDirectory)/infra-modules/terraform"
+
+                # Extra secrets
+                ARTIFACTORY-USER: $(ARTIFACTORY-USER)
+                ARTIFACTORY-PASSWORD: $(ARTIFACTORY-PASSWORD)
+
+                # Added two Env vars to be compatible with local deployments. You cannot set environment vars with '-' in them.
+                ARTIFACTORY_USER: $(ARTIFACTORY-USER)
+                ARTIFACTORY_PASSWORD: $(ARTIFACTORY-PASSWORD)
+                
+                # Deploy to dev
+                ${{ if not(eq(parameters.data_source_name, '')) }}:
+                  TFSTATE_DATA_SOURCE_NAME: ${{ parameters.data_source_name }}
+                ${{ if not(eq(parameters.databricks_cluster_name, '')) }}:
+                  TFSTATE_DATABRICKS_CLUSTER_NAME: ${{ parameters.databricks_cluster_name }}
+              inputs:
+                azureSubscription: 'sp-lpdap-meta'
+                scriptType: 'bash'
+                scriptLocation: 'inlineScript'
+                inlineScript: |
+                  # Display the environment variables in the log in a separate section
+                  echo "##[group]Environment variables"
+                  echo tfstate_data_source_name: $TFSTATE_DATA_SOURCE_NAME
+                  echo tfstate_databricks_cluster_name: $TFSTATE_DATABRICKS_CLUSTER_NAME
+                  echo ""
+                  echo ARM_SUBSCRIPTION_ID: $ARM_SUBSCRIPTION_ID
+                  echo ARM_CLIENT_ID: $ARM_CLIENT_ID
+                  echo ARM_CLIENT_SECRET: $ARM_CLIENT_SECRET
+                  echo ARM_TENANT_ID: $ARM_TENANT_ID
+                  echo ""
+                  echo ENV_CONFIGURATION_FILE: $ENV_CONFIGURATION_FILE
+                  echo PLATFORM_CONFIGURATION_FILE: $PLATFORM_CONFIGURATION_FILE
+                  echo PRODUCT_CONFIGURATION_FILE: $PRODUCT_CONFIGURATION_FILE
+                  echo ""
+                  echo PRODUCT_CONFIGURATION_DIR: $PRODUCT_CONFIGURATION_DIR
+                  echo ""
+                  echo TFSTATE_RESOURCE_GROUP_NAME: $TFSTATE_RESOURCE_GROUP_NAME
+                  echo TFSTATE_STORAGE_ACCOUNT_NAME: $TFSTATE_STORAGE_ACCOUNT_NAME
+                  echo ""
+                  echo TERRAGRUNT_TERRAFORM_DIR: $TERRAGRUNT_TERRAFORM_DIR
+                  echo ARTIFACT_DIR_PATH: $ARTIFACT_DIR_PATH
+                  echo ""
+                  echo CLIENT_SECRET: $CLIENT_SECRET
+                  echo ENVIRONMENT_VERSION: $ENVIRONMENT_VERSION
+                  echo VERSIONS_INFRA_MODULES_ARTIFACT: $VERSIONS_INFRA_MODULES_ARTIFACT
+
+                  # Take the infra-modules artifact version (minus the first letter, the 'v')
+                  ARTIFACT_VERSION="${VERSIONS_INFRA_MODULES_ARTIFACT:1}"
+
+                  # Set the artifact version as an environment variable so we can use it in the version resource in Terragrunt
+                  export INFRA_MODULES_VERSION=$ARTIFACT_VERSION
+
+                  echo "##[endgroup]"
+                  # Clean cache folder
+                  echo "##[group]Clean Terragrunt cache"
+                  find . -type d -name ".terragrunt-cache" -prune -exec rm -rf {} \;
+                  echo "##[endgroup]"
+
+                  echo "##[group]Change to the correct path"
+
+                  # cd to the right infrastructure configuration
+                  echo "##[command]environment_path=\"${TERRAGRUNT_TERRAFORM_DIR}/products/${{ parameters.product }}\""
+                  environment_path="${TERRAGRUNT_TERRAFORM_DIR}/products/${{ parameters.product }}"
+
+                  if [[ ! -d $environment_path ]]; then 
+                    # If the specified path does not exist, crash the pipeline to be safe
+                    echo "Directory $environment_path does not exist."
+                    exit 1;
+                  fi
+                  echo "##[command]cd ${environment_path}"
+                  cd ${environment_path}
+
+                  # cd to the layer that is provided (if there is one)
+                  if [[ ! -d ./${{ parameters.environment_layer_path }} ]]; then
+                    echo "Directory ./${{ parameters.environment_layer_path }} does not exist."
+                    exit 1;
+                  fi
+
+                  echo "##[command]cd ./${{ parameters.environment_layer_path }}"
+                  cd ./${{ parameters.environment_layer_path }}
+                  echo "##[endgroup]"
+                  
+                  terragrunt_command="${{ parameters.action }}"
+                  # Check if the parameter is empty
+                  if [[ ! -z "${{ parameters.terragrunt_include_dir }}" ]]; then
+
+                    # Include each module specified
+                    for module_name in ${{ parameters.terragrunt_include_dir }}; do
+                      echo "##[command]terragrunt_command=\"${terragrunt_command} --terragrunt-include-dir ${module_name}\""
+                      terragrunt_command="${terragrunt_command} --terragrunt-include-dir ${module_name}"
+                    done
+
+                    echo "##[command]terragrunt_command=\"${terragrunt_command} --terragrunt-ignore-external-dependencies\""
+                    terragrunt_command="${terragrunt_command} --terragrunt-ignore-external-dependencies"
+                  fi
+
+                  echo "##[command]terragrunt run-all $terragrunt_command --terragrunt-non-interactive --terragrunt-include-module-prefix --terragrunt-source-update"
+                  if [ ! ${{ parameters.dry_run }} == "True" ]; then
+                    terragrunt run-all init -upgrade --terragrunt-non-interactive --terragrunt-include-module-prefix --terragrunt-source-update
+                    terragrunt run-all $terragrunt_command --terragrunt-non-interactive --terragrunt-include-module-prefix --terragrunt-source-update
+                  fi
+                addSpnToEnvironment: true
+
+            - publish: $(Build.StagingDirectory)/infra-modules/terraform
+              condition: failed()
+              displayName: 'Publish infra-modules'
+              artifact: "infra-modules-${{ parameters.environment }}-${{ parameters.data_domain }}"
+
+            # When the data domain is platform there is no domain artifact
+            # Also the mall main and  environment doesn't have a domain artifact
+            # TODO: Remove business as soon as there are artifacts for it
+            - ${{ if contains(format(' {0} ', variables.domains_with_artifact), format(' {0} ', parameters.data_domain)) }}:
+            # - ${{ if not(or(eq(parameters.data_domain, 'platform'), eq(parameters.data_domain, 'rsm'), eq(parameters.data_domain, 'business'), eq(parameters.data_domain, 'glam') )) }}:
+              - publish: $(Build.StagingDirectory)/domain_artifact
+                condition: failed()
+                displayName: 'Publish domain-artifact'
+                artifact: "domain-artifact-${{ parameters.environment }}-${{ parameters.data_domain }}"
+
+            - ${{ if not(or(eq(parameters.data_domain, 'platform'), eq(parameters.data_domain, 'mall_main') )) }}:
+              - task: Bash@3
+                displayName: "Check if Databricks Asset Bundles files exist"
+                name: Databricks_Asset_Bundles_Variables
+                env:
+                  dev_cnw_databricks_workspace_host: $(dev-cnw-databricks-workspace-host)
+                  dev_cnw_databricks_workspace_pat: $(dev-cnw-databricks-workspace-pat)
+                  dev_ind_databricks_workspace_host: $(dev-ind-databricks-workspace-host)
+                  dev_ind_databricks_workspace_pat: $(dev-ind-databricks-workspace-pat)
+                  dev_pns_databricks_workspace_host: $(dev-pns-databricks-workspace-host)
+                  dev_pns_databricks_workspace_pat: $(dev-pns-databricks-workspace-pat)
+
+                  tst_cnw_databricks_workspace_host: $(tst-cnw-databricks-workspace-host)
+                  tst_cnw_databricks_workspace_pat: $(tst-cnw-databricks-workspace-pat)
+                  tst_ind_databricks_workspace_host: $(tst-ind-databricks-workspace-host)
+                  tst_ind_databricks_workspace_pat: $(tst-ind-databricks-workspace-pat)
+                  tst_pns_databricks_workspace_host: $(tst-pns-databricks-workspace-host)
+                  tst_pns_databricks_workspace_pat: $(tst-pns-databricks-workspace-pat)
+
+                  acc_cnw_databricks_workspace_host: $(acc-cnw-databricks-workspace-host)
+                  acc_cnw_databricks_workspace_pat: $(acc-cnw-databricks-workspace-pat)
+                  acc_ind_databricks_workspace_host: $(acc-ind-databricks-workspace-host)
+                  acc_ind_databricks_workspace_pat: $(acc-ind-databricks-workspace-pat)
+                  acc_pns_databricks_workspace_host: $(acc-pns-databricks-workspace-host)
+                  acc_pns_databricks_workspace_pat: $(acc-pns-databricks-workspace-pat)
+
+                  prd_cnw_databricks_workspace_host: $(prd-cnw-databricks-workspace-host)
+                  prd_cnw_databricks_workspace_pat: $(prd-cnw-databricks-workspace-pat)
+                  prd_ind_databricks_workspace_host: $(prd-ind-databricks-workspace-host)
+                  prd_ind_databricks_workspace_pat: $(prd-ind-databricks-workspace-pat)
+                  prd_pns_databricks_workspace_host: $(prd-pns-databricks-workspace-host)
+                  prd_pns_databricks_workspace_pat: $(prd-pns-databricks-workspace-pat)
+
+                  # We still include these for if we want to enable DABs for SBX and PDV in the future.
+                  sbx_cnw_databricks_workspace_host: $(sbx-cnw-databricks-workspace-host)
+                  sbx_cnw_databricks_workspace_pat: $(sbx-cnw-databricks-workspace-pat)
+                  sbx_ind_databricks_workspace_host: $(sbx-ind-databricks-workspace-host)
+                  sbx_ind_databricks_workspace_pat: $(sbx-ind-databricks-workspace-pat)
+                  sbx_pns_databricks_workspace_host: $(sbx-pns-databricks-workspace-host)
+                  sbx_pns_databricks_workspace_pat: $(sbx-pns-databricks-workspace-pat)
+                  sbx_dm1_databricks_workspace_host: $(sbx-dm1-databricks-workspace-host)
+                  sbx_dm1_databricks_workspace_pat: $(sbx-dm1-databricks-workspace-pat)
+                  sbx_dm2_databricks_workspace_host: $(sbx-dm2-databricks-workspace-host)
+                  sbx_dm2_databricks_workspace_pat: $(sbx-dm2-databricks-workspace-pat)
+
+                  pdv_cnw_databricks_workspace_host: $(pdv-cnw-databricks-workspace-host)
+                  pdv_cnw_databricks_workspace_pat: $(pdv-cnw-databricks-workspace-pat)
+                  pdv_ind_databricks_workspace_host: $(pdv-ind-databricks-workspace-host)
+                  pdv_ind_databricks_workspace_pat: $(pdv-ind-databricks-workspace-pat)
+                  pdv_pns_databricks_workspace_host: $(pdv-pns-databricks-workspace-host)
+                  pdv_pns_databricks_workspace_pat: $(pdv-pns-databricks-workspace-pat)
+                  pdv_dm1_databricks_workspace_host: $(pdv-dm1-databricks-workspace-host)
+                  pdv_dm1_databricks_workspace_pat: $(pdv-dm1-databricks-workspace-pat)
+                  pdv_dm2_databricks_workspace_host: $(pdv-dm2-databricks-workspace-host)
+                  pdv_dm2_databricks_workspace_pat: $(pdv-dm2-databricks-workspace-pat)
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    # Older artifacts don't contain the Databricks Asset Bundles
+                    # To prevent the deploy job from crashing, first check if the files for the Databricks Asset Bundles deployment are in place
+                    # Also compute some values that are needed in that job.
+
+                    echo "##[command][ -d \"${BUILD_STAGINGDIRECTORY}/domain_artifact/logic/databricks_asset_bundles_template\" ]; then"
+                    if [ -d "${BUILD_STAGINGDIRECTORY}/domain_artifact/logic/databricks_asset_bundles_template" ]; then
+                      # The Databricks Asset Bundles template does exit
+
+                      echo "\"${BUILD_STAGINGDIRECTORY}/domain_artifact/logic/databricks_asset_bundles_template\" does exist."
+                      dab_template_exists='True'
+                      
+                      environment="${{ parameters.environment }}"
+
+                      echo "##[command]if [[ ${{ parameters.data_domain }} == \"customer_workflow\" ]]; then"
+                      if [[ ${{ parameters.data_domain }} == "customer_workflow" ]]; then
+                        echo "##[command]data_domain_short=\"cnw\""
+                        data_domain_short="cnw"
+                      echo "##[command]elif [[ ${{ parameters.data_domain }} == \"pensions\" ]]; then"
+                      elif [[ ${{ parameters.data_domain }} == "pensions" ]]; then
+                        echo "##[command]data_domain_short=\"pns\""
+                        data_domain_short="pns"
+                      echo "##[command]elif [[ ${{ parameters.data_domain }} == \"individual\" ]]; then"
+                      elif [[ ${{ parameters.data_domain }} == "individual" ]]; then
+                        echo "##[command]data_domain_short=\"ind\""
+                        data_domain_short="ind"
+                      echo "##[command]elif [[ ${{ parameters.data_domain }} == \"business\" ]]; then"
+                      elif [[ ${{ parameters.data_domain }} == "business" ]]; then
+                        echo "##[command]data_domain_short=\"bdt\""
+                        data_domain_short="bdt"
+                      echo "##[command]elif [[ ${{ parameters.data_domain }} == \"glam\" ]]; then"
+                      elif [[ ${{ parameters.data_domain }} == "glam" ]]; then
+                        echo "##[command]data_domain_short=\"glm\""
+                        data_domain_short="glm"
+                      echo "##[command]elif [[ ${{ parameters.data_domain }} == \"rsm\" ]]; then"
+                      elif [[ ${{ parameters.data_domain }} == "rsm" ]]; then
+                        echo "##[command]data_domain_short=\"rsm\""
+                        data_domain_short="rsm"
+                      echo "##[command]elif [[ ${{ parameters.data_domain }} == \"reinsurance\" ]]; then"
+                      elif [[ ${{ parameters.data_domain }} == "reinsurance" ]]; then
+                        echo "##[command]data_domain_short=\"rrt\""
+                        data_domain_short="rsm"
+                      echo "##[command]elif [[ ${{ parameters.data_domain }} == \"demo1\" ]]; then"
+                      elif [[ ${{ parameters.data_domain }} == "demo1" ]]; then
+                        echo "##[command]data_domain_short=\"dm1\""
+                        data_domain_short="dm1"
+                      echo "##[command]elif [[ ${{ parameters.data_domain }} == \"demo2\" ]]; then"
+                      elif [[ ${{ parameters.data_domain }} == "demo2" ]]; then
+                        echo "##[command]data_domain_short=\"dm2\""
+                        data_domain_short="dm2"
+                      else
+                        echo "Unknown data domain: ${{ parameters.data_domain }}"
+                        exit 1
+                      fi
+
+                      echo "##[command]databricks_workspace_host_variable_name=${environment}_${data_domain_short}_databricks_workspace_host"
+                      databricks_workspace_host_variable_name=${environment}_${data_domain_short}_databricks_workspace_host
+                      echo "##[command]databricks_workspace_pat_variable_name=${environment}_${data_domain_short}_databricks_workspace_pat"
+                      databricks_workspace_pat_variable_name=${environment}_${data_domain_short}_databricks_workspace_pat
+                      # Make sure the correct databricks host and pat are selected
+                      echo "##[command]databricks_workspace_host=${!databricks_workspace_host_variable_name}"
+                      databricks_workspace_host=${!databricks_workspace_host_variable_name}
+                      echo "##[command]databricks_workspace_pat=${!databricks_workspace_pat_variable_name}"
+                      databricks_workspace_pat=${!databricks_workspace_pat_variable_name}
+
+                    else
+                      # The Databricks Asset Bundles template doesn't exit
+
+                      echo "\"${BUILD_STAGINGDIRECTORY}/domain_artifact/logic/databricks_asset_bundles_template\" does not exist, skipping next step."
+                      dab_template_exists="False"
+                    fi
+
+                    echo "dab_template_exists: $dab_template_exists"
+                    echo "environment: $environment"
+                    echo "databricks_workspace_host: $databricks_workspace_host"
+                    echo "databricks_workspace_pat: $databricks_workspace_pat"
+                    
+                    # Expose the values to the other jobs
+                    echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=dab_template_exists]$dab_template_exists"
+                    echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=environment]$environment"
+                    echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=databricks_workspace_host]$databricks_workspace_host"
+                    echo "##vso[task.setvariable isoutput=true;isreadonly=true;issecret=false;variable=databricks_workspace_pat]$databricks_workspace_pat"
+
+              - task: Bash@3
+                displayName: "Deploy Databricks Asset Bundles"
+                # Only trigger this task after the previous one succeeded and if the previous one detected a dab template. Also, skip if the action is "destroy", as this should (for now) only happen for infrastructure.
+                condition: and(
+                    succeeded(), 
+                    eq(variables['Databricks_Asset_Bundles_Variables.dab_template_exists'], 'True'),
+                    eq(${{ parameters.deploy_asset_bundle }}, true),
+                    not(eq( '${{ parameters.action }}', 'destroy' ))
+                  )
+                env:
+                    ENVIRONMENT: $(Databricks_Asset_Bundles_Variables.environment)
+                    DATABRICKS_WORKSPACE_HOST: $(Databricks_Asset_Bundles_Variables.databricks_workspace_host)
+                    DATABRICKS_WORKSPACE_PAT: $(Databricks_Asset_Bundles_Variables.databricks_workspace_pat)
+                inputs:
+                  filePath: "$(Build.SourcesDirectory)/scripts/databricks_asset_bundles.sh"
+                  workingDirectory: $(Build.StagingDirectory)/domain_artifact/logic
+                  arguments: '"${{ parameters.data_domain }}" "${{ parameters.action }}" "${ENVIRONMENT}" "${DATABRICKS_WORKSPACE_HOST}" "${DATABRICKS_WORKSPACE_PAT}" "${{ parameters.databricks_bundle_root_dir }}" "${{ parameters.dry_run }}"'
+                  failOnStderr: false

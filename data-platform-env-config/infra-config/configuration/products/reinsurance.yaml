@@ -1,0 +1,184 @@
+user_object_ids:
+  data_engineers:
+    - job
+infrastructure_configuration:
+  instance_type: mall
+  deploy_azure_hosted_integration_runtime: false
+  uc_enabled: true
+  legacy_clusters_enabled: false
+  # The following Databricks related entries allow for defining cluster configuration and pypi packages. 
+  # There are default values for all parameters (see modules/functional/variables.tf -> databricks_functional_vars), so you only have to specify default values that you want to overwrite
+  # This can be done across all environments (here), or for a specific environment (add this to env-specific infrastructure-configuration below)
+  databricks_main_clusters:
+    spark_version_id: "15.4.x-scala2.12"
+  databricks_user_specific_clusters: {}
+  databricks_pypi_packages: []
+  deploy_interface_storage_account: false
+
+dev:
+  domain_variables:
+    name: "reinsurance"
+    version: "01"
+    abbreviation: "rrt"
+    entra_group_names:
+      use_catalog: "GSCDCA-rrt-Unity-dev-usecatalog-gold"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.165.160.96/27"
+      databricks_public_subnet: "10.165.163.128/26"
+      databricks_private_subnet: "10.165.163.192/26"
+      virtual_machine_1: "10.165.160.100"
+      virtual_machine_2: "10.165.160.101"
+      virtual_machine_3: "10.165.160.108"
+      virtual_machine_4: "10.165.160.109"
+      data_factory_private_endpoint: "10.165.160.102"
+      data_factory_02_private_endpoint: "10.165.160.110"
+      databricks_private_endpoint: "10.165.160.103"
+      storage_dfs_private_endpoint: "10.165.160.104"
+      storage_blob_private_endpoint: "10.165.160.105"
+      storage_table_private_endpoint: "10.165.160.111"
+      key_vault_infra_private_endpoint: "10.165.160.106"
+      key_vault_sources_private_endpoint: "10.165.160.107"
+      interface_storage_dfs_private_endpoint: "10.165.160.112"
+      interface_storage_blob_private_endpoint: "10.165.160.113"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Second Wednesday"
+    patch_schedule_start_time: "19:00"
+    patch_schedule_start_date: "2021-03-02"
+    patch_schedule_end_time: "03:00"
+
+tst:
+  domain_variables:
+    name: "reinsurance"
+    version: "01"
+    abbreviation: "rrt"
+    entra_group_names:
+      use_catalog: "GSCTCA-rrt-Unity-tst-usecatalog-gold"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.165.164.96/27"
+      databricks_public_subnet: "10.165.167.128/26"
+      databricks_private_subnet: "10.165.167.192/26"
+      virtual_machine_1: "10.165.164.100"
+      virtual_machine_2: "10.165.164.101"
+      virtual_machine_3: "10.165.164.108"
+      virtual_machine_4: "10.165.164.109"
+      data_factory_private_endpoint: "10.165.164.102"
+      data_factory_02_private_endpoint: "10.165.164.110"
+      databricks_private_endpoint: "10.165.164.103"
+      storage_dfs_private_endpoint: "10.165.164.104"
+      storage_blob_private_endpoint: "10.165.164.105"
+      storage_table_private_endpoint: "10.165.164.111"
+      key_vault_infra_private_endpoint: "10.165.164.106"
+      key_vault_sources_private_endpoint: "10.165.164.107"
+      interface_storage_dfs_private_endpoint: "10.165.164.112"
+      interface_storage_blob_private_endpoint: "10.165.164.113"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb: "2e36f91c-fdc5-428b-adde-c990c6eeeec5"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Second Thursday"
+    patch_schedule_start_time: "19:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"
+
+acc:
+  domain_variables:
+    name: "reinsurance"
+    version: "01"
+    abbreviation: "rrt"
+    entra_group_names:
+      use_catalog: "GSCACA-rrt-Unity-acc-usecatalog-gold"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.165.168.96/27"
+      databricks_public_subnet: "10.165.171.128/26"
+      databricks_private_subnet: "10.165.171.192/26"
+      virtual_machine_1: "10.165.168.100"
+      virtual_machine_2: "10.165.168.101"
+      virtual_machine_3: "10.165.168.108"
+      virtual_machine_4: "10.165.168.109"
+      data_factory_private_endpoint: "10.165.168.102"
+      data_factory_02_private_endpoint: "10.165.168.110"
+      databricks_private_endpoint: "10.165.168.103"
+      storage_dfs_private_endpoint: "10.165.168.104"
+      storage_blob_private_endpoint: "10.165.168.105"
+      storage_table_private_endpoint: "10.165.168.111"
+      key_vault_infra_private_endpoint: "10.165.168.106"
+      key_vault_sources_private_endpoint: "10.165.168.107
+      interface_storage_dfs_private_endpoint: "10.165.168.112"
+      interface_storage_blob_private_endpoint: "10.165.168.113"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb-acc: "8718671f-8e8c-44f7-b749-3a1d7f22f463"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Third Saturday"
+    patch_schedule_start_time: "10:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"
+
+prd:
+  domain_variables:
+    name: "reinsurance"
+    version: "01"
+    abbreviation: "rrt"
+    entra_group_names:
+      use_catalog: "GSCPCA-rrt-Unity-prd-usecatalog-gold"
+    virtual_machine_size: "Standard_D2_v4"
+    ip_addresses:
+      services_subnet: "10.165.172.96/27"
+      databricks_public_subnet: "10.165.175.128/26"
+      databricks_private_subnet: "10.165.175.192/26"
+      virtual_machine_1: "10.165.172.100"
+      virtual_machine_2: "10.165.172.101"
+      virtual_machine_3: "10.165.172.108"
+      virtual_machine_4: "10.165.172.109"
+      data_factory_private_endpoint: "10.165.172.102"
+      data_factory_02_private_endpoint: "10.165.172.110"
+      databricks_private_endpoint: "10.165.172.103"
+      storage_dfs_private_endpoint: "10.165.172.104"
+      storage_blob_private_endpoint: "10.165.172.105"
+      storage_table_private_endpoint: "10.165.172.111"
+      key_vault_infra_private_endpoint: "10.165.172.106"
+      key_vault_sources_private_endpoint: "10.165.172.107"
+      interface_storage_dfs_private_endpoint: "10.165.172.112"
+      interface_storage_blob_private_endpoint: "10.165.172.113"
+
+    object_ids:
+      adb_enterprise_app:
+        LPDAP-adb-prd: "dfd1bbb4-3a0d-4c45-9f8c-30e83d728c73"
+      azure_databricks_app: "4e3ab6ff-5f8d-4d29-ba89-1b285ac9f364"
+      enterprise_apps: {}
+      aad_group_management: "60ba8ea5-da2e-4532-a2d9-819eb86da745" # GSBDAB-Azure-lpdap-eu-Management
+      aad_group_platform_engineer: "e7b3afaf-cce5-40d7-bd42-09c47975f5f9" # GSBDAB-Azure-lpdap-eu-PlatformEngineer
+      aad_group_data_engineer: "fc952bf2-72c5-4a05-9132-f8037c0f4fc7" # GSBDAB-Azure-lpdap-eu-DataEngineer
+      aad_group_migration: "48b9c20d-c9a2-47e4-b96d-90237b3369f4" # GSBDAB-Azure-lpdap-eu-Migration
+    app_ids: {}
+    patch_schedule_recur_every: "1Month Fourth Saturday"
+    patch_schedule_start_time: "10:00"
+    patch_schedule_start_date: "2024-01-01"
+    patch_schedule_end_time: "03:00"

@@ -1,0 +1,35 @@
+name: testing-build-agents
+trigger: none
+
+parameters:
+  - name: command
+    displayName: 'Which command you would like to run within the build agent?'
+    default: " "
+    type: string
+  
+  - name: agentPool
+    displayName: 'Which agent pool you would like to use?'
+    type: string
+    default: 'LPDAP Private Agent Pool'
+    values:
+      - 'LPDAP Private Agent Pool'
+      - 'LPDAP-Pool-general'
+      - 'LPDAP-Pool-sbx'
+      - 'LPDAP-Pool-pdv'
+
+pool:
+  name: LPDAP Private Agent Pool
+
+stages:
+  - stage: Check
+    displayName: Checks
+    jobs:
+    - job: Test_build_agent
+      displayName: "Execute command on build agent"
+      steps:
+      - task: CmdLine@2
+        displayName: Execute test command in the build agent       
+        inputs:
+          script: |
+            echo "Executing command: ${{ parameters.command }}"
+            ${{ parameters.command }}

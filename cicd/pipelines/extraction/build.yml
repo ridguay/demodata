@@ -1,0 +1,8 @@
+parameters:
+- name: artifactoryRepoUrl
+  type: string
+
+stages:
+  - template: templates/stage.build.yml@cicd
+    parameters:
+      artifactoryRepoUrl: ${{ parameters.artifactoryRepoUrl }}

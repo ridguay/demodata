@@ -1,0 +1,47 @@
+# Read every key, except for the keys starting with an underscore
+# Then all keys that do not start with an underscore are considered to be part of the schema
+# All keys starting with an underscore are considered 'documentation', and not part of the schema
+
+env_variables:
+  tenant_id: 
+    _type: "string"
+    _description: "ID of the tenant of Nationale Nederlanden."
+  client_id:
+    _type: "string"
+    _description: "Client ID of the service principal for the subscription to deploy to."
+  subscription_id:
+    _type: "string"
+    _description: "ID of the subscription to deploy to."
+  tags:
+    _type: "map"
+    _description: "Tags all resources will get. Should be key-value pairs."
+  virtual_network_data:
+    _description: "Information of how the networking is setup. This should contain the resource_group_name and name key, containing the name of the resource group containing the networking and the name of the virtual network respectively."
+
+domain_variables:
+  ip_addresses:
+    _description: "IP addresses and ranges that various resources will use."
+    services_subnet:
+      _type: "string, format: XXX.XXX.XXX.XXX/XX"
+      _description: "IP range for the services subnet."
+    storage_dfs_private_endpoint: 
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the storage dfs private endpoint can use."
+    storage_blob_private_endpoint:
+      _type: "string, format: XXX.XXX.XXX.XXX"
+      _description: "IP address the storage blob private endpoint can use."
+
+infrastructure_configuration:
+  storage_account:
+    configure_default_network_rules_storage:
+      _type: "bool"
+      _description: "Flag to specify if one the network rules should be set for a respective storage account. Disabling this allows one to enable public network access from all networks. This is needed for a POC in the Pensions environment."
+    storage_account_extra_tags:
+      _type: "map"
+      _description: "Storage Account Extra tags to pass, on top of the tags specified in the <env>.yml files."
+    default_to_oauth_authentication:
+      _type: "bool"
+      _description: "Default to Azure Active Directory authorization in the Azure portal when accessing the Storage Account"
+    shared_access_key_enabled:
+      _type: "bool"
+      _description: "Indicates whether the storage account permits requests to be authorized with the account access key via Shared Key"

@@ -1,0 +1,59 @@
+parameters:
+- name: artifactoryRepoUrl
+  type: string
+- name: environments
+  type: object
+
+stages:
+- template: templates/stage.build.yml@cicd
+  parameters:
+    artifactoryRepoUrl: ${{ parameters.artifactoryRepoUrl }}
+    buildTarget: local
+
+- ${{ each env in parameters.environments }}:
+  - stage: "validate_adf_${{ env }}"
+    displayName: "Validate ADF in ${{ env }}"
+    dependsOn: [ "build_adf" ]
+    variables:
+      - template: variables/${{ env }}.yml@extraction
+    jobs:
+
+    # Get the override parameters for the ARM deployment
+    - template: templates/job.get-override-params.yml@cicd
+      parameters:
+        environment: ${{ env }}
+
+    - job: validate_arm_deployment
+      displayName: "Validate ARM template deployment"
+      dependsOn: [ "get_override_params_job" ]
+      pool: LPDAP-Pool-${{ env }}
+      variables:
+        overrideParameters: $[ dependencies.get_override_params_job.outputs['create_param_string.override_params'] ]
+      steps:
+      # Download the published artifact from the build-local stage
+      - task: DownloadPipelineArtifact@2 
+        displayName: Download Pipeline Artifact
+        inputs:
+          buildType: 'current'
+          artifactName: 'ArmTemplate' 
+          targetPath: '$(Pipeline.Workspace)/ArmTemplate'
+
+      # Run a what-if deployment to validate the deployment will succeed
+      - task: AzurePowerShell@5
+        displayName: 'Run what-if deployment'
+        inputs:
+          azureSubscription: LPDAP-${{ env }}
+          ScriptType: 'InlineScript'
+          Inline: |
+            try {
+                $deployment = New-AzResourceGroupDeployment -ResourceGroupName $(resourceGroupName) `
+                          -TemplateFile '$(Pipeline.Workspace)/ArmTemplate/ARMTemplateForFactory.json' `
+                          -TemplateParameterFile '$(Pipeline.Workspace)/ArmTemplate/ARMTemplateParametersForFactory.json' `
+                          -WhatIf $(overrideParameters) -ErrorAction Stop
+            } catch {
+                Write-Host "Deployment failed with error: $_"
+                Write-Host "Full error details: $($_.Exception.Message)"
+                throw
+            }
+          azurePowerShellVersion: 'LatestVersion'
+          pwsh: true

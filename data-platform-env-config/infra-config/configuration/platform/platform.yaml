@@ -1,0 +1,38 @@
+user_object_ids:
+iam_workspace_id: "/subscriptions/8e5fbe4b-a78e-4e74-b38c-15f7fbe4cf9b/resourceGroups/rg-lpdap-logging-iam/providers/Microsoft.OperationalInsights/workspaces/log-lpdap-iam"
+
+iam:
+  domain_variables:
+    name: "platform"
+    abbreviation: "dap"
+
+sbx:
+  domain_variables:
+    name: "platform"
+    abbreviation: "dap"
+
+pdv:
+  domain_variables:
+    name: "platform"
+    abbreviation: "dap"
+
+dev:
+  domain_variables:
+    name: "platform"
+    abbreviation: "dap"
+
+tst:
+  domain_variables:
+    name: "platform"
+    abbreviation: "dap"
+
+acc:
+  domain_variables:
+    name: "platform"
+    abbreviation: "dap"
+
+prd:
+  domain_variables:
+    name: "platform"
+    abbreviation: "dap"
+
